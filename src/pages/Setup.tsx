@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, CenteredCard, Input } from '../components/ui';
 import { meta, wipeAll } from '../core/db';
 import { setupVault } from '../core/vault/vault';
-import { unlockSession } from '../core/vault/session';
+import { getDekRaw, unlockSession } from '../core/vault/session';
+import { isBiometricSupported, registerBiometric } from '../core/vault/biometric';
 import { refreshVaultStatus } from '../hooks/useVaultStatus';
 
 type Step = 'welcome' | 'password' | 'recovery';
@@ -20,6 +21,40 @@ export default function Setup() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Step 3 (biometric) state
+  const [bioSupported, setBioSupported] = useState(false);
+  const [bioEnabled, setBioEnabled] = useState(false);
+  const [bioError, setBioError] = useState<string | null>(null);
+
+  useEffect(() => {
+    isBiometricSupported().then(setBioSupported);
+  }, []);
+
+  async function enableBiometric() {
+    setBioError(null);
+    const dek = getDekRaw();
+    if (!dek) {
+      setBioError('保险箱未解锁');
+      return;
+    }
+    const platform =
+      /Mac|iPhone|iPad/.test(navigator.platform) ? 'Apple 设备' :
+      /Win/.test(navigator.platform) ? 'Windows 设备' :
+      /Android/.test(navigator.userAgent) ? 'Android 设备' : '本设备';
+    const result = await registerBiometric(dek, platform);
+    if (result.ok) {
+      setBioEnabled(true);
+    } else {
+      const messages: Record<string, string> = {
+        unsupported: '当前浏览器不支持生物识别',
+        prf_unsupported: '当前浏览器不支持 WebAuthn PRF 扩展',
+        cancelled: '已取消',
+        failed: '注册失败',
+      };
+      setBioError(messages[result.reason] ?? '注册失败');
+    }
+  }
 
   async function handleCreate() {
     setError(null);
@@ -166,6 +201,29 @@ export default function Setup() {
             />
             <span>我已经把恢复码保存到了安全的地方，明白它丢了就没法找回我的数据。</span>
           </label>
+
+          {bioSupported && (
+            <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4 space-y-3">
+              <div className="space-y-1">
+                <h2 className="text-sm font-medium text-slate-100">
+                  快速解锁（可选）
+                </h2>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  注册一个设备 Passkey，以后用 Face ID / Touch ID / Windows Hello
+                  一键解锁。密钥保存在设备的安全芯片里，Gicca 不会拿到。
+                </p>
+              </div>
+              {bioEnabled ? (
+                <p className="text-sm text-emerald-400">✓ 生物识别已启用</p>
+              ) : (
+                <Button variant="secondary" className="w-full" onClick={enableBiometric}>
+                  启用生物识别
+                </Button>
+              )}
+              {bioError && <p className="text-xs text-rose-400">{bioError}</p>}
+            </div>
+          )}
+
           <Button
             className="w-full"
             disabled={!acknowledged}

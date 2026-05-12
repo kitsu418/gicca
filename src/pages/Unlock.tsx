@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, CenteredCard, Input } from '../components/ui';
 import { unlockWithPassword, unlockWithRecovery } from '../core/vault/vault';
 import { unlockSession } from '../core/vault/session';
 import { parseRecoveryCode } from '../core/vault/recovery';
+import {
+  isBiometricSupported,
+  listBiometricWraps,
+  unlockWithBiometric,
+} from '../core/vault/biometric';
 
 type Mode = 'password' | 'recovery';
 
@@ -15,6 +20,43 @@ export default function Unlock() {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricAttempted, setBiometricAttempted] = useState(false);
+
+  // Check if biometric is wired up and try it once on mount. WebAuthn requires
+  // a user gesture on some browsers, so this may fail silently on first paint;
+  // the explicit button below is the reliable path.
+  useEffect(() => {
+    (async () => {
+      const wraps = await listBiometricWraps();
+      if (wraps.length === 0) return;
+      const supported = await isBiometricSupported();
+      if (!supported) return;
+      setBiometricAvailable(true);
+    })();
+  }, []);
+
+  async function tryBiometric() {
+    setError(null);
+    setBiometricAttempted(true);
+    setBusy(true);
+    try {
+      const result = await unlockWithBiometric();
+      if ('ok' in result && result.ok) {
+        unlockSession(result.dekRaw, result.dekKey);
+        navigate('/', { replace: true });
+        return;
+      }
+      // Stay silent on user-initiated cancel; show a hint otherwise so the
+      // user knows why the prompt didn't appear.
+      if (result.reason !== 'cancelled') {
+        setError(reasonToMessage(result.reason));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handlePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -54,9 +96,6 @@ export default function Unlock() {
         return;
       }
       unlockSession(result.dekRaw, result.dekKey);
-      // After recovery-code unlock the user should set a new master password
-      // from Settings (the old one is presumed forgotten). Settings wiring
-      // lands in task #13; for now we drop them on Home.
       navigate('/', { replace: true });
     } finally {
       setBusy(false);
@@ -73,39 +112,60 @@ export default function Unlock() {
       </div>
 
       {mode === 'password' && (
-        <form onSubmit={handlePassword} className="space-y-4">
-          <Input
-            label="主密码"
-            type={show ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            autoFocus
-          />
-          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={show}
-              onChange={(e) => setShow(e.target.checked)}
-              className="accent-sky-500"
+        <>
+          {biometricAvailable && !biometricAttempted && (
+            <Button className="w-full" onClick={tryBiometric} disabled={busy}>
+              使用生物识别解锁
+            </Button>
+          )}
+          <form onSubmit={handlePassword} className="space-y-4">
+            <Input
+              label="主密码"
+              type={show ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              autoFocus={!biometricAvailable}
             />
-            显示密码
-          </label>
-          {error && <p className="text-sm text-rose-400">{error}</p>}
-          <Button type="submit" className="w-full" disabled={busy || !password}>
-            {busy ? '验证中…' : '解锁'}
-          </Button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode('recovery');
-              setError(null);
-            }}
-            className="block w-full text-center text-xs text-slate-400 hover:text-sky-400"
-          >
-            忘记主密码？用恢复码解锁
-          </button>
-        </form>
+            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={show}
+                onChange={(e) => setShow(e.target.checked)}
+                className="accent-sky-500"
+              />
+              显示密码
+            </label>
+            {error && <p className="text-sm text-rose-400">{error}</p>}
+            <Button type="submit" className="w-full" disabled={busy || !password}>
+              {busy ? '验证中…' : '解锁'}
+            </Button>
+            {biometricAvailable && biometricAttempted && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  setBiometricAttempted(false);
+                  tryBiometric();
+                }}
+                disabled={busy}
+              >
+                再试一次生物识别
+              </Button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setMode('recovery');
+                setError(null);
+              }}
+              className="block w-full text-center text-xs text-slate-400 hover:text-sky-400"
+            >
+              忘记主密码？用恢复码解锁
+            </button>
+          </form>
+        </>
       )}
 
       {mode === 'recovery' && (
@@ -125,7 +185,7 @@ export default function Unlock() {
               placeholder="单词之间用空格分隔"
             />
             <span className="block text-xs text-slate-500">
-              用恢复码解锁后会强制要求设置新的主密码。
+              用恢复码解锁后请到设置里重新设置主密码。
             </span>
           </label>
           {error && <p className="text-sm text-rose-400">{error}</p>}
@@ -146,4 +206,19 @@ export default function Unlock() {
       )}
     </CenteredCard>
   );
+}
+
+function reasonToMessage(reason: string): string {
+  switch (reason) {
+    case 'unsupported':
+      return '当前浏览器不支持生物识别';
+    case 'no_wraps':
+      return '尚未在该设备上启用生物识别';
+    case 'prf_unsupported':
+      return '当前浏览器不支持 WebAuthn PRF';
+    case 'cancelled':
+      return '已取消';
+    default:
+      return '生物识别失败，请用主密码登录';
+  }
 }
