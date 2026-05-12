@@ -5,19 +5,21 @@ import Unlock from './pages/Unlock';
 import Home from './pages/Home';
 import { CenteredCard } from './components/ui';
 import { useVaultSession } from './hooks/useVaultSession';
-import { useVaultStatus } from './hooks/useVaultStatus';
+import { refreshVaultStatus, useVaultStatus } from './hooks/useVaultStatus';
+import { useAutoLock } from './hooks/useAutoLock';
 import { wipeAll } from './core/db';
 
 export default function App() {
   const status = useVaultStatus();
   const session = useVaultSession();
+  useAutoLock();
 
   // If a previous setup was interrupted before the user could acknowledge
   // the recovery code, scrap the half-built vault so the user lands cleanly
   // on /setup again. This is safe — no real data has been written yet.
   useEffect(() => {
     if (status.state === 'incomplete') {
-      wipeAll();
+      wipeAll().then(refreshVaultStatus);
     }
   }, [status.state]);
 

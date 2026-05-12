@@ -4,6 +4,7 @@ import { Button, CenteredCard, Input } from '../components/ui';
 import { meta, wipeAll } from '../core/db';
 import { setupVault } from '../core/vault/vault';
 import { unlockSession } from '../core/vault/session';
+import { refreshVaultStatus } from '../hooks/useVaultStatus';
 
 type Step = 'welcome' | 'password' | 'recovery';
 
@@ -49,6 +50,7 @@ export default function Setup() {
     await meta.set('hasSetup', true);
     await meta.set('schemaVersion', 1);
     await meta.set('autoLockMs', 5 * 60 * 1000);
+    refreshVaultStatus();
     navigate('/', { replace: true });
   }
 

@@ -1,14 +1,149 @@
-// Placeholder unlock screen — replaced in task #5 with the real
-// master-password unlock flow.
-import { CenteredCard } from '../components/ui';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button, CenteredCard, Input } from '../components/ui';
+import { unlockWithPassword, unlockWithRecovery } from '../core/vault/vault';
+import { unlockSession } from '../core/vault/session';
+import { parseRecoveryCode } from '../core/vault/recovery';
+
+type Mode = 'password' | 'recovery';
 
 export default function Unlock() {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<Mode>('password');
+  const [password, setPassword] = useState('');
+  const [recoveryText, setRecoveryText] = useState('');
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handlePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const result = await unlockWithPassword(password);
+      if (!result.ok) {
+        setError(result.reason === 'no_vault' ? '没有保险箱' : '主密码错误');
+        return;
+      }
+      unlockSession(result.dekRaw, result.dekKey);
+      navigate('/', { replace: true });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRecovery(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    const parsed = parseRecoveryCode(recoveryText);
+    if (!parsed.ok) {
+      const err = parsed.error;
+      if (err.kind === 'wrong_count') {
+        setError(`需要 ${err.expected} 个单词，输入了 ${err.got} 个`);
+      } else {
+        setError(`第 ${err.index + 1} 个单词 "${err.word}" 不在词表中`);
+      }
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await unlockWithRecovery(parsed.words);
+      if (!result.ok) {
+        setError(result.reason === 'no_vault' ? '没有保险箱' : '恢复码错误');
+        return;
+      }
+      unlockSession(result.dekRaw, result.dekKey);
+      // After recovery-code unlock the user should set a new master password
+      // from Settings (the old one is presumed forgotten). Settings wiring
+      // lands in task #13; for now we drop them on Home.
+      navigate('/', { replace: true });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <CenteredCard>
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Locked</h1>
-        <p className="text-slate-400 text-sm">解锁屏幕将在下一个 feature 中实装。</p>
+        <h1 className="text-2xl font-semibold tracking-tight">解锁 Gicca</h1>
+        <p className="text-slate-400 text-sm">
+          {mode === 'password' ? '输入主密码继续' : '输入 12 个恢复码单词'}
+        </p>
       </div>
+
+      {mode === 'password' && (
+        <form onSubmit={handlePassword} className="space-y-4">
+          <Input
+            label="主密码"
+            type={show ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            autoFocus
+          />
+          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={show}
+              onChange={(e) => setShow(e.target.checked)}
+              className="accent-sky-500"
+            />
+            显示密码
+          </label>
+          {error && <p className="text-sm text-rose-400">{error}</p>}
+          <Button type="submit" className="w-full" disabled={busy || !password}>
+            {busy ? '验证中…' : '解锁'}
+          </Button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode('recovery');
+              setError(null);
+            }}
+            className="block w-full text-center text-xs text-slate-400 hover:text-sky-400"
+          >
+            忘记主密码？用恢复码解锁
+          </button>
+        </form>
+      )}
+
+      {mode === 'recovery' && (
+        <form onSubmit={handleRecovery} className="space-y-4">
+          <label htmlFor="recovery" className="block space-y-1.5">
+            <span className="block text-sm font-medium text-slate-200">12 个恢复码单词</span>
+            <textarea
+              id="recovery"
+              value={recoveryText}
+              onChange={(e) => setRecoveryText(e.target.value)}
+              rows={3}
+              autoFocus
+              spellCheck={false}
+              autoCapitalize="off"
+              autoComplete="off"
+              className="block w-full rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 font-mono text-sm"
+              placeholder="单词之间用空格分隔"
+            />
+            <span className="block text-xs text-slate-500">
+              用恢复码解锁后会强制要求设置新的主密码。
+            </span>
+          </label>
+          {error && <p className="text-sm text-rose-400">{error}</p>}
+          <Button type="submit" className="w-full" disabled={busy || !recoveryText.trim()}>
+            {busy ? '验证中…' : '用恢复码解锁'}
+          </Button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode('password');
+              setError(null);
+            }}
+            className="block w-full text-center text-xs text-slate-400 hover:text-sky-400"
+          >
+            返回主密码
+          </button>
+        </form>
+      )}
     </CenteredCard>
   );
 }
