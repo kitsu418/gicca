@@ -1,0 +1,18 @@
+{
+  "id": "amazon",
+  "name": "Amazon",
+  "aliases": ["amzn"],
+  "color": "#FF9900",
+  "category": "retail",
+  "region": ["US", "GB", "DE", "JP", "CA"],
+  "defaultCurrency": "USD",
+  "cardFormat": {
+    "cardNumberPattern": "^[A-Z0-9]{14,16}$",
+    "pinRequired": false,
+    "barcodeFormat": "CODE128",
+    "barcodeFromCardNumber": "direct"
+  },
+  "balanceCheckUrl": "https://www.amazon.com/gc/balance",
+  "version": 1,
+  "source": "builtin"
+}

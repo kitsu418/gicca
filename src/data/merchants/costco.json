@@ -1,0 +1,17 @@
+{
+  "id": "costco",
+  "name": "Costco",
+  "aliases": ["开市客", "好市多"],
+  "color": "#E32227",
+  "category": "retail",
+  "region": ["US", "CN", "CA", "TW", "JP", "GB"],
+  "cardFormat": {
+    "cardNumberLength": [16],
+    "pinRequired": false,
+    "barcodeFormat": "CODE128",
+    "barcodeFromCardNumber": "direct"
+  },
+  "balanceCheckUrl": "https://www.costco.com/CheckBalance",
+  "version": 1,
+  "source": "builtin"
+}

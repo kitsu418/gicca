@@ -1,0 +1,17 @@
+{
+  "id": "apple",
+  "name": "Apple",
+  "aliases": ["app store", "itunes"],
+  "color": "#000000",
+  "category": "service",
+  "region": ["US", "CN", "JP", "GB", "DE"],
+  "cardFormat": {
+    "cardNumberPattern": "^X[A-Z0-9]{15}$",
+    "cardNumberLength": [16],
+    "pinRequired": false,
+    "barcodeFormat": "QR"
+  },
+  "balanceCheckUrl": "https://www.apple.com/shop/gift-cards",
+  "version": 1,
+  "source": "builtin"
+}

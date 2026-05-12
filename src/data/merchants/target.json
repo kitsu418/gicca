@@ -1,0 +1,18 @@
+{
+  "id": "target",
+  "name": "Target",
+  "color": "#CC0000",
+  "category": "retail",
+  "region": ["US"],
+  "defaultCurrency": "USD",
+  "cardFormat": {
+    "cardNumberLength": [16],
+    "pinRequired": true,
+    "pinLength": [4, 6],
+    "barcodeFormat": "CODE128",
+    "barcodeFromCardNumber": "direct"
+  },
+  "balanceCheckUrl": "https://www.target.com/gift-card-balance",
+  "version": 1,
+  "source": "builtin"
+}

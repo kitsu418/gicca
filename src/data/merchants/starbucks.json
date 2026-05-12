@@ -1,0 +1,18 @@
+{
+  "id": "starbucks",
+  "name": "Starbucks",
+  "aliases": ["星巴克", "sbux"],
+  "color": "#006241",
+  "category": "food",
+  "region": ["US", "CN", "CA", "JP", "GB"],
+  "cardFormat": {
+    "cardNumberLength": [16],
+    "pinRequired": true,
+    "pinLength": [8],
+    "barcodeFormat": "CODE128",
+    "barcodeFromCardNumber": "direct"
+  },
+  "balanceCheckUrl": "https://www.starbucks.com/account/gift-cards",
+  "version": 1,
+  "source": "builtin"
+}
