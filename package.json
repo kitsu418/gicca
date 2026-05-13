@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
     "@zxing/browser": "^0.2.0",
     "idb": "^8.0.0",
     "jsbarcode": "^3.12.3",

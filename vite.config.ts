@@ -31,7 +31,17 @@ export default defineConfig({
         // The scanner chunk (@zxing/browser) is large and only needed when the
         // user opens the barcode scanner. Keep it out of the precache and let
         // the SW grab it on first use, then cache it for subsequent offline use.
-        globIgnores: ['**/scanner-*.js'],
+        // Fontsource ships seven subset woff2 files for Inter (latin, latin-ext,
+        // cyrillic, cyrillic-ext, greek, greek-ext, vietnamese). The UI is
+        // English-only so the browser only ever requests the latin subset via
+        // the @font-face unicode-range — precaching the other six wastes ~180 KB.
+        globIgnores: [
+          '**/scanner-*.js',
+          '**/inter-cyrillic*.woff2',
+          '**/inter-greek*.woff2',
+          '**/inter-vietnamese*.woff2',
+          '**/inter-latin-ext-*.woff2',
+        ],
         runtimeCaching: [
           {
             urlPattern: /\/assets\/scanner-.*\.js$/,
