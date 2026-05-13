@@ -7,6 +7,7 @@ import CardDetail from './pages/CardDetail';
 import AddCard from './pages/AddCard';
 import EditCard from './pages/EditCard';
 import Backup from './pages/Backup';
+import Settings from './pages/Settings';
 import { CenteredCard } from './components/ui';
 import { useVaultSession } from './hooks/useVaultSession';
 import { refreshVaultStatus, useVaultStatus } from './hooks/useVaultStatus';
@@ -69,6 +70,7 @@ function UnlockedRoutes() {
       <Route path="/cards/:id" element={<CardDetail />} />
       <Route path="/cards/:id/edit" element={<EditCard />} />
       <Route path="/backup" element={<Backup />} />
+      <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
