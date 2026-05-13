@@ -1,0 +1,181 @@
+// Spend / top-up logger + history list shown on CardDetail.
+
+import { useEffect, useState } from 'react';
+import { Button, Input } from './ui';
+import {
+  addTransaction,
+  deleteTransaction,
+  listTransactions,
+  type ResolvedTransaction,
+} from '../core/transactions';
+
+type Props = {
+  cardId: string;
+  currency?: string;
+  onAfterChange?: () => void;
+};
+
+type Mode = 'list' | 'spend' | 'topup';
+
+export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
+  const [items, setItems] = useState<ResolvedTransaction[]>([]);
+  const [mode, setMode] = useState<Mode>('list');
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [location, setLocation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function refresh() {
+    setItems(await listTransactions(cardId));
+  }
+
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardId]);
+
+  function reset() {
+    setAmount('');
+    setNote('');
+    setLocation('');
+    setError(null);
+    setMode('list');
+  }
+
+  async function submit() {
+    setError(null);
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      setError('请输入正数金额');
+      return;
+    }
+    setBusy(true);
+    try {
+      const cents = Math.round(value * 100);
+      await addTransaction(cardId, {
+        amount: mode === 'spend' ? -cents : cents,
+        note: note.trim() || undefined,
+        location: location.trim() || undefined,
+      });
+      await refresh();
+      onAfterChange?.();
+      reset();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '保存失败');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('删除这条记录？余额会回滚。')) return;
+    await deleteTransaction(id);
+    await refresh();
+    onAfterChange?.();
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-slate-200">使用记录</span>
+        {mode === 'list' && (
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => setMode('spend')}>
+              - 使用
+            </Button>
+            <Button variant="ghost" onClick={() => setMode('topup')}>
+              + 充值
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {mode !== 'list' && (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+          <Input
+            label={mode === 'spend' ? '消费金额' : '充值金额'}
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={currency ? `${currency} 金额` : '金额'}
+            autoFocus
+          />
+          <Input
+            label="位置（可选）"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="店铺名称、城市…"
+          />
+          <Input
+            label="备注（可选）"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="买了什么"
+          />
+          {error && <p className="text-xs text-rose-400">{error}</p>}
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={reset}>
+              取消
+            </Button>
+            <Button className="flex-1" disabled={busy} onClick={submit}>
+              {busy ? '保存中…' : '保存'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        mode === 'list' && (
+          <p className="text-xs text-slate-500">还没有使用记录</p>
+        )
+      ) : (
+        <ul className="divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-900/40">
+          {items.map((t) => (
+            <li key={t.id} className="px-3 py-2.5 flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span
+                    className={`tabular-nums font-medium ${
+                      t.amount < 0 ? 'text-rose-300' : 'text-emerald-300'
+                    }`}
+                  >
+                    {t.amount < 0 ? '-' : '+'}
+                    {formatMoney(Math.abs(t.amount), currency)}
+                  </span>
+                  <span className="text-xs text-slate-500 shrink-0">
+                    {new Date(t.date).toLocaleDateString()}
+                  </span>
+                </div>
+                {(t.location || t.decryptedNote) && (
+                  <div className="text-xs text-slate-400 mt-0.5 truncate">
+                    {[t.location, t.decryptedNote].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => handleDelete(t.id)}
+                className="text-xs text-slate-500 hover:text-rose-400 shrink-0"
+                title="删除"
+              >
+                删除
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function formatMoney(cents: number, currency?: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: currency ? 'currency' : 'decimal',
+      currency: currency || undefined,
+      maximumFractionDigits: 2,
+    }).format(cents / 100);
+  } catch {
+    return (cents / 100).toFixed(2);
+  }
+}

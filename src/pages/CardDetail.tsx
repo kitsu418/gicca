@@ -4,6 +4,7 @@ import { Button, Screen } from '../components/ui';
 import { MerchantBadge } from '../components/MerchantBadge';
 import { Barcode } from '../components/Barcode';
 import { AttachmentGallery } from '../components/AttachmentGallery';
+import { TransactionsPanel } from '../components/TransactionsPanel';
 import { deleteCard, getCard, getCardSecrets } from '../core/cards';
 import { getMerchant } from '../core/merchants';
 import type { BarcodeFormat, CardRecord, CardSecrets } from '../core/types';
@@ -170,6 +171,15 @@ export default function CardDetail() {
           {card.expiresAt && <InfoRow label="过期" value={new Date(card.expiresAt).toLocaleDateString()} />}
           <InfoRow label="添加" value={new Date(card.createdAt).toLocaleDateString()} />
         </div>
+
+        <TransactionsPanel
+          cardId={card.id}
+          currency={card.currency}
+          onAfterChange={async () => {
+            const fresh = await getCard(id);
+            if (fresh) setCard(fresh);
+          }}
+        />
 
         <AttachmentGallery cardId={card.id} />
       </div>
