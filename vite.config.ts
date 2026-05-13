@@ -27,8 +27,31 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        globPatterns: ['**/*.{css,html,svg,png,ico,woff2}', '**/index-*.js', '**/JsBarcode-*.js', '**/browser-*.js', '**/_commonjsHelpers-*.js', '**/workbox-window*.js'],
+        // The scanner chunk (@zxing/browser) is large and only needed when the
+        // user opens the barcode scanner. Keep it out of the precache and let
+        // the SW grab it on first use, then cache it for subsequent offline use.
+        globIgnores: ['**/scanner-*.js'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/scanner-.*\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gicca-scanner',
+              expiration: { maxEntries: 4 },
+            },
+          },
+        ],
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('@zxing')) return 'scanner';
+        },
+      },
+    },
+  },
 });

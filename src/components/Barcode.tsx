@@ -1,7 +1,16 @@
-// Renders a barcode for checkout. bwip-js supports the formats we care
-// about (CODE128 / CODE39 / EAN13 / UPCA / PDF417 / QR / Aztec / Data Matrix);
-// we lazy-load it so the ~50KB library is only fetched when a card detail
-// page is actually opened.
+// Renders a barcode for checkout.
+//
+// Replaces the previous monolithic bwip-js (~260 KB gzip) with two
+// lazy-loaded specialist libraries:
+//
+//   - jsbarcode (~5 KB gzip) for 1D formats (Code 128 / Code 39 / EAN-13 /
+//     UPC-A and friends)
+//   - qrcode    (~15 KB gzip) for QR
+//
+// Each library only ships when its first card is opened, so the initial
+// install stays tight. Formats we don't have a renderer for (PDF417 /
+// Aztec / Data Matrix) show a friendly fallback rather than nothing —
+// gift cards almost never use those.
 
 import { useEffect, useRef, useState } from 'react';
 import type { BarcodeFormat } from '../core/types';
@@ -9,23 +18,16 @@ import type { BarcodeFormat } from '../core/types';
 type Props = {
   format: BarcodeFormat;
   value: string;
-  // Width in CSS pixels of the canvas backing buffer. Height is derived from
-  // the barcode type (1D barcodes are short and wide, 2D barcodes square).
   scale?: number;
   className?: string;
-  /** Render on a white card so dark themes don't compress contrast. */
   light?: boolean;
 };
 
-const FORMAT_TO_BCID: Record<BarcodeFormat, string> = {
-  CODE128: 'code128',
-  CODE39: 'code39',
-  EAN13: 'ean13',
-  UPCA: 'upca',
-  QR: 'qrcode',
-  PDF417: 'pdf417',
-  AZTEC: 'azteccode',
-  DATAMATRIX: 'datamatrix',
+const JSBARCODE_FORMATS: Partial<Record<BarcodeFormat, string>> = {
+  CODE128: 'CODE128',
+  CODE39: 'CODE39',
+  EAN13: 'EAN13',
+  UPCA: 'UPC',
 };
 
 export function Barcode({ format, value, scale = 3, className = '', light = true }: Props) {
@@ -35,25 +37,41 @@ export function Barcode({ format, value, scale = 3, className = '', light = true
   useEffect(() => {
     let cancelled = false;
     setError(null);
+
     (async () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
       try {
-        const mod = await import('bwip-js');
-        const bwipjs = (mod.default ?? mod) as typeof import('bwip-js');
-        const canvas = canvasRef.current;
-        if (!canvas || cancelled) return;
-        bwipjs.toCanvas(canvas, {
-          bcid: FORMAT_TO_BCID[format],
-          text: value,
-          scale,
-          height: format === 'QR' || format === 'AZTEC' || format === 'DATAMATRIX' ? undefined : 14,
-          includetext: format !== 'QR' && format !== 'AZTEC' && format !== 'DATAMATRIX',
-          textxalign: 'center',
-          backgroundcolor: light ? 'FFFFFF' : undefined,
-        });
+        if (format === 'QR') {
+          const QRCode = await import('qrcode');
+          if (cancelled) return;
+          await QRCode.toCanvas(canvas, value, {
+            margin: 1,
+            scale: Math.max(2, scale * 2),
+            color: { dark: '#000000', light: light ? '#ffffff' : '#00000000' },
+          });
+        } else if (JSBARCODE_FORMATS[format]) {
+          const mod = await import('jsbarcode');
+          if (cancelled) return;
+          const JsBarcode = mod.default;
+          JsBarcode(canvas, value, {
+            format: JSBARCODE_FORMATS[format],
+            width: scale,
+            height: 80,
+            displayValue: true,
+            margin: 8,
+            background: light ? '#ffffff' : 'transparent',
+            lineColor: '#000000',
+            font: 'monospace',
+          });
+        } else {
+          setError(`Format ${format} not supported on this build`);
+        }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'render failed');
       }
     })();
+
     return () => {
       cancelled = true;
     };
