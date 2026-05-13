@@ -32,7 +32,7 @@ export default function App() {
   if (status.state === 'loading') {
     return (
       <CenteredCard>
-        <div className="text-center text-slate-500 text-sm">加载中…</div>
+        <div className="text-center text-slate-500 text-sm">Loading…</div>
       </CenteredCard>
     );
   }

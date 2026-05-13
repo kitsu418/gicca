@@ -47,7 +47,7 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
     setError(null);
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) {
-      setError('请输入正数金额');
+      setError('Enter a positive amount');
       return;
     }
     setBusy(true);
@@ -62,14 +62,14 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
       onAfterChange?.();
       reset();
     } catch (e) {
-      setError(e instanceof Error ? e.message : '保存失败');
+      setError(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('删除这条记录？余额会回滚。')) return;
+    if (!window.confirm('Delete this entry? The balance will be rolled back.')) return;
     await deleteTransaction(id);
     await refresh();
     onAfterChange?.();
@@ -78,14 +78,14 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-200">使用记录</span>
+        <span className="text-sm font-medium text-slate-200">Activity</span>
         {mode === 'list' && (
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setMode('spend')}>
-              - 使用
+              − Spend
             </Button>
             <Button variant="ghost" onClick={() => setMode('topup')}>
-              + 充值
+              + Top-up
             </Button>
           </div>
         )}
@@ -94,32 +94,32 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
       {mode !== 'list' && (
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
           <Input
-            label={mode === 'spend' ? '消费金额' : '充值金额'}
+            label={mode === 'spend' ? 'Amount spent' : 'Amount added'}
             inputMode="decimal"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder={currency ? `${currency} 金额` : '金额'}
+            placeholder={currency ? `Amount in ${currency}` : 'Amount'}
             autoFocus
           />
           <Input
-            label="位置（可选）"
+            label="Location (optional)"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder="店铺名称、城市…"
+            placeholder="Store, city…"
           />
           <Input
-            label="备注（可选）"
+            label="Note (optional)"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="买了什么"
+            placeholder="What you bought"
           />
           {error && <p className="text-xs text-rose-400">{error}</p>}
           <div className="flex gap-2">
             <Button variant="secondary" onClick={reset}>
-              取消
+              Cancel
             </Button>
             <Button className="flex-1" disabled={busy} onClick={submit}>
-              {busy ? '保存中…' : '保存'}
+              {busy ? 'Saving…' : 'Save'}
             </Button>
           </div>
         </div>
@@ -127,7 +127,7 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
 
       {items.length === 0 ? (
         mode === 'list' && (
-          <p className="text-xs text-slate-500">还没有使用记录</p>
+          <p className="text-xs text-slate-500">No activity yet</p>
         )
       ) : (
         <ul className="divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-900/40">
@@ -140,7 +140,7 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
                       t.amount < 0 ? 'text-rose-300' : 'text-emerald-300'
                     }`}
                   >
-                    {t.amount < 0 ? '-' : '+'}
+                    {t.amount < 0 ? '−' : '+'}
                     {formatMoney(Math.abs(t.amount), currency)}
                   </span>
                   <span className="text-xs text-slate-500 shrink-0">
@@ -156,9 +156,9 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
               <button
                 onClick={() => handleDelete(t.id)}
                 className="text-xs text-slate-500 hover:text-rose-400 shrink-0"
-                title="删除"
+                title="Delete"
               >
-                删除
+                Delete
               </button>
             </li>
           ))}

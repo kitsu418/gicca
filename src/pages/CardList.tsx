@@ -15,11 +15,11 @@ export default function CardList() {
         <header className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Gicca</h1>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate('/backup')} aria-label="备份">
-              备份
+            <Button variant="ghost" onClick={() => navigate('/backup')} aria-label="Backup">
+              Backup
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/settings')} aria-label="设置">
-              设置
+            <Button variant="ghost" onClick={() => navigate('/settings')} aria-label="Settings">
+              Settings
             </Button>
             <Button
               variant="ghost"
@@ -27,9 +27,9 @@ export default function CardList() {
                 lockSession();
                 navigate('/unlock');
               }}
-              aria-label="锁定"
+              aria-label="Lock"
             >
-              锁定
+              Lock
             </Button>
           </div>
         </header>
@@ -50,7 +50,7 @@ export default function CardList() {
           to="/cards/new"
           className="fixed bottom-6 right-6 left-6 max-w-md mx-auto inline-flex items-center justify-center rounded-2xl bg-sky-500 hover:bg-sky-400 text-white px-4 py-3 font-medium shadow-lg shadow-sky-500/20"
         >
-          + 添加礼品卡
+          + Add gift card
         </Link>
       </div>
     </Screen>
@@ -60,8 +60,8 @@ export default function CardList() {
 function EmptyState() {
   return (
     <div className="rounded-2xl border border-dashed border-slate-700 px-6 py-12 text-center space-y-2">
-      <p className="text-slate-300">还没有礼品卡</p>
-      <p className="text-sm text-slate-500">点击下方按钮添加第一张</p>
+      <p className="text-slate-300">No gift cards yet</p>
+      <p className="text-sm text-slate-500">Tap the button below to add your first one</p>
     </div>
   );
 }
@@ -94,10 +94,10 @@ function CardListItem({ card }: { card: CardRecord }) {
 function StatusPill({ status }: { status: CardRecord['status'] }) {
   const labels: Record<CardRecord['status'], string> = {
     active: '',
-    used_up: '已用完',
-    expired: '已过期',
-    lost: '已遗失',
-    disabled: '已停用',
+    used_up: 'Used up',
+    expired: 'Expired',
+    lost: 'Lost',
+    disabled: 'Disabled',
   };
   if (!labels[status]) return null;
   return (
@@ -111,12 +111,12 @@ function ExpiryHint({ date }: { date: string }) {
   const ms = new Date(date).getTime() - Date.now();
   const days = Math.ceil(ms / (24 * 60 * 60 * 1000));
   if (days < 0) {
-    return <span className="text-rose-400">过期 {-days} 天</span>;
+    return <span className="text-rose-400">Expired {-days}d ago</span>;
   }
   if (days <= 30) {
-    return <span className="text-amber-400">{days} 天后过期</span>;
+    return <span className="text-amber-400">Expires in {days}d</span>;
   }
-  return <span>过期 {new Date(date).toLocaleDateString()}</span>;
+  return <span>Expires {new Date(date).toLocaleDateString()}</span>;
 }
 
 function formatMoney(cents: number, currency?: string): string {

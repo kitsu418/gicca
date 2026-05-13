@@ -41,7 +41,7 @@ export default function Setup() {
     try {
       const parsed = await readBackup(file);
       const ok = window.confirm(
-        `导入来自 ${new Date(parsed.exportedAt).toLocaleString()} 的备份，共 ${parsed.payload.cards.length} 张卡？`,
+        `Import the backup from ${new Date(parsed.exportedAt).toLocaleString()} containing ${parsed.payload.cards.length} card(s)?`,
       );
       if (!ok) return;
       await importBackupReplacing(file);
@@ -49,7 +49,7 @@ export default function Setup() {
       refreshVaultStatus();
       navigate('/unlock', { replace: true });
     } catch (e) {
-      setImportError(e instanceof Error ? e.message : '导入失败');
+      setImportError(e instanceof Error ? e.message : 'Import failed');
     } finally {
       if (fileRef.current) fileRef.current.value = '';
     }
@@ -59,35 +59,35 @@ export default function Setup() {
     setBioError(null);
     const dek = getDekRaw();
     if (!dek) {
-      setBioError('保险箱未解锁');
+      setBioError('Vault is locked');
       return;
     }
     const platform =
-      /Mac|iPhone|iPad/.test(navigator.platform) ? 'Apple 设备' :
-      /Win/.test(navigator.platform) ? 'Windows 设备' :
-      /Android/.test(navigator.userAgent) ? 'Android 设备' : '本设备';
+      /Mac|iPhone|iPad/.test(navigator.platform) ? 'Apple device' :
+      /Win/.test(navigator.platform) ? 'Windows device' :
+      /Android/.test(navigator.userAgent) ? 'Android device' : 'This device';
     const result = await registerBiometric(dek, platform);
     if (result.ok) {
       setBioEnabled(true);
     } else {
       const messages: Record<string, string> = {
-        unsupported: '当前浏览器不支持生物识别',
-        prf_unsupported: '当前浏览器不支持 WebAuthn PRF 扩展',
-        cancelled: '已取消',
-        failed: '注册失败',
+        unsupported: 'Biometric unlock is not supported by this browser',
+        prf_unsupported: 'This browser does not support the WebAuthn PRF extension',
+        cancelled: 'Cancelled',
+        failed: 'Registration failed',
       };
-      setBioError(messages[result.reason] ?? '注册失败');
+      setBioError(messages[result.reason] ?? 'Registration failed');
     }
   }
 
   async function handleCreate() {
     setError(null);
     if (password.length < 8) {
-      setError('密码至少 8 个字符');
+      setError('Password must be at least 8 characters');
       return;
     }
     if (password !== confirm) {
-      setError('两次输入的密码不一致');
+      setError('Passwords do not match');
       return;
     }
     setBusy(true);
@@ -99,7 +99,7 @@ export default function Setup() {
       setRecoveryCode(recoveryCode);
       setStep('recovery');
     } catch (e) {
-      setError(e instanceof Error ? e.message : '创建失败');
+      setError(e instanceof Error ? e.message : 'Could not create vault');
     } finally {
       setBusy(false);
     }
@@ -123,28 +123,29 @@ export default function Setup() {
       {step === 'welcome' && (
         <div className="space-y-5">
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-tight">欢迎使用 Gicca</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">Welcome to Gicca</h1>
             <p className="text-slate-400 text-sm leading-relaxed">
-              一个本地优先的礼品卡保险箱。所有卡号、PIN 都用你的主密码在设备上加密，
-              Gicca 没有服务器、不上传任何数据。
+              A local-first vault for gift cards. Card numbers and PINs are
+              encrypted on this device with your master password — Gicca has
+              no servers and never uploads your data.
             </p>
           </div>
           <ul className="space-y-3 text-sm text-slate-300">
             <li className="flex gap-3">
               <span className="text-sky-400">1</span>
-              <span>设置一个主密码（用于解锁，需要至少 8 个字符）</span>
+              <span>Pick a master password (at least 8 characters)</span>
             </li>
             <li className="flex gap-3">
               <span className="text-sky-400">2</span>
-              <span>保存一份恢复码（忘记主密码时唯一的救命稻草）</span>
+              <span>Save a recovery code — the only way back if you forget the password</span>
             </li>
             <li className="flex gap-3">
               <span className="text-sky-400">3</span>
-              <span>开始添加你的礼品卡</span>
+              <span>Start adding gift cards</span>
             </li>
           </ul>
           <Button className="w-full" onClick={() => setStep('password')}>
-            开始
+            Get started
           </Button>
           <div className="space-y-2">
             <input
@@ -162,7 +163,7 @@ export default function Setup() {
               className="w-full"
               onClick={() => fileRef.current?.click()}
             >
-              从备份恢复
+              Restore from backup
             </Button>
             {importError && <p className="text-xs text-rose-400">{importError}</p>}
           </div>
@@ -172,23 +173,25 @@ export default function Setup() {
       {step === 'password' && (
         <div className="space-y-5">
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight">设置主密码</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Set a master password</h1>
             <p className="text-slate-400 text-sm">
-              主密码用来加密本地所有数据。建议用一个不容易被猜到、且自己能记住的长密码（例如一句你能背的诗）。
-              <strong className="text-rose-400"> 主密码无法被找回</strong>，只能靠恢复码救援。
+              The master password encrypts everything on this device. Use a long,
+              memorable phrase you don't use elsewhere.
+              <strong className="text-rose-400"> The password cannot be recovered</strong> —
+              only the recovery code can rescue your data.
             </p>
           </div>
           <Input
-            label="主密码"
+            label="Master password"
             type={show ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
-            placeholder="至少 8 个字符"
-            hint={`${password.length} 字符`}
+            placeholder="At least 8 characters"
+            hint={`${password.length} characters`}
           />
           <Input
-            label="再次输入"
+            label="Confirm password"
             type={show ? 'text' : 'password'}
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
@@ -201,15 +204,15 @@ export default function Setup() {
               onChange={(e) => setShow(e.target.checked)}
               className="accent-sky-500"
             />
-            显示密码
+            Show password
           </label>
           {error && <p className="text-sm text-rose-400">{error}</p>}
           <div className="flex gap-3">
             <Button variant="secondary" onClick={() => setStep('welcome')}>
-              返回
+              Back
             </Button>
             <Button className="flex-1" disabled={busy} onClick={handleCreate}>
-              {busy ? '创建中…' : '创建保险箱'}
+              {busy ? 'Creating…' : 'Create vault'}
             </Button>
           </div>
         </div>
@@ -218,11 +221,11 @@ export default function Setup() {
       {step === 'recovery' && recoveryCode && (
         <div className="space-y-5">
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight">保存恢复码</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Save your recovery code</h1>
             <p className="text-slate-400 text-sm leading-relaxed">
-              下面 12 个单词是你的恢复码。
-              <strong className="text-rose-400">忘记主密码时，只有这串单词能救回你的数据。</strong>
-              请截图、抄在纸上或存入密码管理器。
+              These 12 words are your recovery code.
+              <strong className="text-rose-400"> If you forget your master password, this code is the only way to get your data back.</strong>
+              {' '}Screenshot it, write it down, or save it in a password manager.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-700 bg-slate-900 p-4 font-mono">
@@ -234,7 +237,7 @@ export default function Setup() {
             ))}
           </div>
           <Button variant="secondary" className="w-full" onClick={copyRecovery}>
-            复制到剪贴板
+            Copy to clipboard
           </Button>
           <label className="flex items-start gap-3 text-sm text-slate-300 cursor-pointer">
             <input
@@ -243,25 +246,26 @@ export default function Setup() {
               onChange={(e) => setAcknowledged(e.target.checked)}
               className="mt-1 accent-sky-500"
             />
-            <span>我已经把恢复码保存到了安全的地方，明白它丢了就没法找回我的数据。</span>
+            <span>I've saved the recovery code somewhere safe. I understand losing it means losing access to my data.</span>
           </label>
 
           {bioSupported && (
             <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4 space-y-3">
               <div className="space-y-1">
                 <h2 className="text-sm font-medium text-slate-100">
-                  快速解锁（可选）
+                  Quick unlock (optional)
                 </h2>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  注册一个设备 Passkey，以后用 Face ID / Touch ID / Windows Hello
-                  一键解锁。密钥保存在设备的安全芯片里，Gicca 不会拿到。
+                  Register a passkey on this device to unlock with Face ID,
+                  Touch ID, or Windows Hello. The key lives in the device's
+                  secure enclave — Gicca never sees it.
                 </p>
               </div>
               {bioEnabled ? (
-                <p className="text-sm text-emerald-400">✓ 生物识别已启用</p>
+                <p className="text-sm text-emerald-400">Biometric unlock enabled</p>
               ) : (
                 <Button variant="secondary" className="w-full" onClick={enableBiometric}>
-                  启用生物识别
+                  Enable biometric unlock
                 </Button>
               )}
               {bioError && <p className="text-xs text-rose-400">{bioError}</p>}
@@ -273,7 +277,7 @@ export default function Setup() {
             disabled={!acknowledged}
             onClick={handleFinish}
           >
-            进入应用
+            Enter app
           </Button>
         </div>
       )}

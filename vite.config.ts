@@ -14,7 +14,7 @@ export default defineConfig({
         name: 'Gicca — Gift Card Vault',
         short_name: 'Gicca',
         description: 'Encrypted, local-first gift card manager',
-        lang: 'zh-CN',
+        lang: 'en',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',

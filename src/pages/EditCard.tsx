@@ -18,7 +18,7 @@ export default function EditCard() {
       try {
         const c = await getCard(id);
         if (!c) {
-          setError('找不到这张卡');
+          setError('Card not found');
           return;
         }
         const s = await getCardSecrets(c);
@@ -26,7 +26,7 @@ export default function EditCard() {
         setCard(c);
         setSecrets(s);
       } catch (e) {
-        setError(e instanceof Error ? e.message : '加载失败');
+        setError(e instanceof Error ? e.message : 'Could not load card');
       }
     })();
     return () => {
@@ -51,16 +51,16 @@ export default function EditCard() {
       <div className="max-w-md mx-auto p-6 space-y-6">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-sm text-slate-400 hover:text-slate-100">
-            ← 返回
+            ← Back
           </button>
-          <h1 className="text-xl font-semibold">编辑礼品卡</h1>
+          <h1 className="text-xl font-semibold">Edit gift card</h1>
         </div>
         {error && <p className="text-sm text-rose-400">{error}</p>}
         {card && secrets && (
           <CardForm
             initial={card}
             initialSecrets={secrets}
-            submitLabel="保存修改"
+            submitLabel="Save changes"
             onSubmit={handleSubmit}
           />
         )}

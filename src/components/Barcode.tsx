@@ -62,7 +62,7 @@ export function Barcode({ format, value, scale = 3, className = '', light = true
   if (error) {
     return (
       <div className={`text-xs text-rose-400 ${className}`}>
-        条码渲染失败：{error}
+        Barcode render failed: {error}
       </div>
     );
   }

@@ -24,7 +24,7 @@ export default function CardDetail() {
       try {
         const c = await getCard(id);
         if (!c) {
-          setError('找不到这张卡');
+          setError('Card not found');
           return;
         }
         if (cancelled) return;
@@ -33,7 +33,7 @@ export default function CardDetail() {
         if (cancelled) return;
         setSecrets(s);
       } catch (e) {
-        setError(e instanceof Error ? e.message : '加载失败');
+        setError(e instanceof Error ? e.message : 'Could not load card');
       }
     })();
     return () => {
@@ -42,7 +42,7 @@ export default function CardDetail() {
   }, [id]);
 
   async function handleDelete() {
-    if (!confirm('确定删除这张礼品卡？')) return;
+    if (!window.confirm('Delete this gift card?')) return;
     await deleteCard(id);
     navigate('/', { replace: true });
   }
@@ -62,7 +62,7 @@ export default function CardDetail() {
         <div className="max-w-md mx-auto p-6 space-y-4">
           <p className="text-rose-400">{error}</p>
           <Link to="/" className="text-sky-400 text-sm">
-            返回首页
+            Back to home
           </Link>
         </div>
       </Screen>
@@ -72,7 +72,7 @@ export default function CardDetail() {
   if (!card) {
     return (
       <Screen>
-        <div className="max-w-md mx-auto p-6 text-slate-500 text-sm">加载中…</div>
+        <div className="max-w-md mx-auto p-6 text-slate-500 text-sm">Loading…</div>
       </Screen>
     );
   }
@@ -82,20 +82,20 @@ export default function CardDetail() {
       <div className="max-w-md mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="text-sm text-slate-400 hover:text-slate-100">
-            ← 返回
+            ← Back
           </button>
           <div className="flex gap-2">
             <Link
               to={`/cards/${id}/edit`}
               className="text-sm text-slate-400 hover:text-slate-100"
             >
-              编辑
+              Edit
             </Link>
             <button
               onClick={handleDelete}
               className="text-sm text-rose-400 hover:text-rose-300"
             >
-              删除
+              Delete
             </button>
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function CardDetail() {
             </h1>
             {card.balance != null && (
               <p className="text-slate-300 text-lg tabular-nums">
-                余额 {formatMoney(card.balance, card.currency)}
+                Balance {formatMoney(card.balance, card.currency)}
               </p>
             )}
           </div>
@@ -122,7 +122,7 @@ export default function CardDetail() {
               type="button"
               onClick={() => setFullscreenBarcode(true)}
               className="block w-full text-left"
-              title="点击放大显示"
+              title="Tap to enlarge"
             >
               <Barcode format={bc.format} value={bc.value} scale={2} />
             </button>
@@ -132,7 +132,7 @@ export default function CardDetail() {
         {secrets ? (
           <div className="space-y-3">
             <SecretField
-              label="卡号"
+              label="Card number"
               value={secrets.cardNumber}
               revealed={revealed}
               onCopy={() => copy(secrets.cardNumber)}
@@ -150,26 +150,26 @@ export default function CardDetail() {
               className="w-full"
               onClick={() => setRevealed((r) => !r)}
             >
-              {revealed ? '隐藏敏感字段' : '显示敏感字段'}
+              {revealed ? 'Hide secrets' : 'Reveal secrets'}
             </Button>
             {secrets.note && (
               <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-                <div className="text-xs text-slate-500 mb-1">备注</div>
+                <div className="text-xs text-slate-500 mb-1">Notes</div>
                 <p className="text-sm whitespace-pre-wrap">{secrets.note}</p>
               </div>
             )}
           </div>
         ) : (
-          <div className="text-slate-500 text-sm">解密中…</div>
+          <div className="text-slate-500 text-sm">Decrypting…</div>
         )}
 
         <div className="space-y-2 text-sm text-slate-400">
           {card.initialValue != null && (
-            <InfoRow label="面值" value={formatMoney(card.initialValue, card.currency)} />
+            <InfoRow label="Face value" value={formatMoney(card.initialValue, card.currency)} />
           )}
-          {card.currency && <InfoRow label="币种" value={card.currency} />}
-          {card.expiresAt && <InfoRow label="过期" value={new Date(card.expiresAt).toLocaleDateString()} />}
-          <InfoRow label="添加" value={new Date(card.createdAt).toLocaleDateString()} />
+          {card.currency && <InfoRow label="Currency" value={card.currency} />}
+          {card.expiresAt && <InfoRow label="Expires" value={new Date(card.expiresAt).toLocaleDateString()} />}
+          <InfoRow label="Added" value={new Date(card.createdAt).toLocaleDateString()} />
         </div>
 
         <TransactionsPanel
@@ -216,7 +216,7 @@ function FullscreenBarcode({
       <p className="mt-6 text-slate-700 font-mono tabular-nums text-lg break-all">
         {value}
       </p>
-      <p className="mt-3 text-slate-500 text-xs">点击任意位置关闭</p>
+      <p className="mt-3 text-slate-500 text-xs">Tap anywhere to close</p>
     </div>
   );
 }
@@ -257,9 +257,9 @@ function SecretField({
         <button
           onClick={onCopy}
           className="shrink-0 text-xs text-sky-400 hover:text-sky-300"
-          title="复制"
+          title="Copy"
         >
-          复制
+          Copy
         </button>
       </div>
     </div>

@@ -65,7 +65,7 @@ export default function Unlock() {
     try {
       const result = await unlockWithPassword(password);
       if (!result.ok) {
-        setError(result.reason === 'no_vault' ? '没有保险箱' : '主密码错误');
+        setError(result.reason === 'no_vault' ? 'No vault on this device' : 'Wrong master password');
         return;
       }
       unlockSession(result.dekRaw, result.dekKey);
@@ -82,9 +82,9 @@ export default function Unlock() {
     if (!parsed.ok) {
       const err = parsed.error;
       if (err.kind === 'wrong_count') {
-        setError(`需要 ${err.expected} 个单词，输入了 ${err.got} 个`);
+        setError(`Expected ${err.expected} words, got ${err.got}`);
       } else {
-        setError(`第 ${err.index + 1} 个单词 "${err.word}" 不在词表中`);
+        setError(`Word #${err.index + 1} ("${err.word}") is not in the recovery wordlist`);
       }
       return;
     }
@@ -92,7 +92,7 @@ export default function Unlock() {
     try {
       const result = await unlockWithRecovery(parsed.words);
       if (!result.ok) {
-        setError(result.reason === 'no_vault' ? '没有保险箱' : '恢复码错误');
+        setError(result.reason === 'no_vault' ? 'No vault on this device' : 'Wrong recovery code');
         return;
       }
       unlockSession(result.dekRaw, result.dekKey);
@@ -105,9 +105,9 @@ export default function Unlock() {
   return (
     <CenteredCard>
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">解锁 Gicca</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Unlock Gicca</h1>
         <p className="text-slate-400 text-sm">
-          {mode === 'password' ? '输入主密码继续' : '输入 12 个恢复码单词'}
+          {mode === 'password' ? 'Enter your master password to continue' : 'Enter the 12 recovery words'}
         </p>
       </div>
 
@@ -115,12 +115,12 @@ export default function Unlock() {
         <>
           {biometricAvailable && !biometricAttempted && (
             <Button className="w-full" onClick={tryBiometric} disabled={busy}>
-              使用生物识别解锁
+              Use biometric unlock
             </Button>
           )}
           <form onSubmit={handlePassword} className="space-y-4">
             <Input
-              label="主密码"
+              label="Master password"
               type={show ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -134,11 +134,11 @@ export default function Unlock() {
                 onChange={(e) => setShow(e.target.checked)}
                 className="accent-sky-500"
               />
-              显示密码
+              Show password
             </label>
             {error && <p className="text-sm text-rose-400">{error}</p>}
             <Button type="submit" className="w-full" disabled={busy || !password}>
-              {busy ? '验证中…' : '解锁'}
+              {busy ? 'Verifying…' : 'Unlock'}
             </Button>
             {biometricAvailable && biometricAttempted && (
               <Button
@@ -151,7 +151,7 @@ export default function Unlock() {
                 }}
                 disabled={busy}
               >
-                再试一次生物识别
+                Try biometric again
               </Button>
             )}
             <button
@@ -162,7 +162,7 @@ export default function Unlock() {
               }}
               className="block w-full text-center text-xs text-slate-400 hover:text-sky-400"
             >
-              忘记主密码？用恢复码解锁
+              Forgot your password? Use the recovery code
             </button>
           </form>
         </>
@@ -171,7 +171,7 @@ export default function Unlock() {
       {mode === 'recovery' && (
         <form onSubmit={handleRecovery} className="space-y-4">
           <label htmlFor="recovery" className="block space-y-1.5">
-            <span className="block text-sm font-medium text-slate-200">12 个恢复码单词</span>
+            <span className="block text-sm font-medium text-slate-200">12 recovery words</span>
             <textarea
               id="recovery"
               value={recoveryText}
@@ -182,15 +182,15 @@ export default function Unlock() {
               autoCapitalize="off"
               autoComplete="off"
               className="block w-full rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 font-mono text-sm"
-              placeholder="单词之间用空格分隔"
+              placeholder="Separate words with spaces"
             />
             <span className="block text-xs text-slate-500">
-              用恢复码解锁后请到设置里重新设置主密码。
+              After unlocking with the recovery code, set a new master password in Settings.
             </span>
           </label>
           {error && <p className="text-sm text-rose-400">{error}</p>}
           <Button type="submit" className="w-full" disabled={busy || !recoveryText.trim()}>
-            {busy ? '验证中…' : '用恢复码解锁'}
+            {busy ? 'Verifying…' : 'Unlock with recovery code'}
           </Button>
           <button
             type="button"
@@ -200,7 +200,7 @@ export default function Unlock() {
             }}
             className="block w-full text-center text-xs text-slate-400 hover:text-sky-400"
           >
-            返回主密码
+            Back to master password
           </button>
         </form>
       )}
@@ -211,14 +211,14 @@ export default function Unlock() {
 function reasonToMessage(reason: string): string {
   switch (reason) {
     case 'unsupported':
-      return '当前浏览器不支持生物识别';
+      return 'Biometric unlock is not supported by this browser';
     case 'no_wraps':
-      return '尚未在该设备上启用生物识别';
+      return 'Biometric unlock has not been enabled on this device';
     case 'prf_unsupported':
-      return '当前浏览器不支持 WebAuthn PRF';
+      return 'This browser does not support the WebAuthn PRF extension';
     case 'cancelled':
-      return '已取消';
+      return 'Cancelled';
     default:
-      return '生物识别失败，请用主密码登录';
+      return 'Biometric unlock failed — please use the master password';
   }
 }

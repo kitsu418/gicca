@@ -41,7 +41,7 @@ export function AttachmentGallery({ cardId }: Props) {
       }
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : '上传失败');
+      setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -49,7 +49,7 @@ export function AttachmentGallery({ cardId }: Props) {
   }
 
   async function handleDelete(att: Attachment) {
-    if (!confirm('删除这张照片？')) return;
+    if (!window.confirm('Delete this photo?')) return;
     await deleteAttachment(cardId, att.id);
     await refresh();
     if (viewing?.id === att.id) setViewing(null);
@@ -58,7 +58,7 @@ export function AttachmentGallery({ cardId }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-200">照片</span>
+        <span className="text-sm font-medium text-slate-200">Photos</span>
         <input
           ref={fileRef}
           type="file"
@@ -72,7 +72,7 @@ export function AttachmentGallery({ cardId }: Props) {
           onClick={() => fileRef.current?.click()}
           disabled={busy}
         >
-          {busy ? '处理中…' : '+ 添加'}
+          {busy ? 'Processing…' : '+ Add'}
         </Button>
       </div>
 
@@ -139,7 +139,7 @@ function Thumbnail({
         <img src={url} alt="" className="w-full h-full object-cover" />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs">
-          解密中
+          Decrypting
         </div>
       )}
     </button>
@@ -180,7 +180,7 @@ function FullscreenViewer({
     <div className="fixed inset-0 z-50 bg-black flex flex-col" onClick={onClose}>
       <div className="absolute top-0 left-0 right-0 flex justify-between p-4 text-white z-10">
         <button onClick={onClose} className="text-sm">
-          关闭
+          Close
         </button>
         <button
           onClick={(e) => {
@@ -189,7 +189,7 @@ function FullscreenViewer({
           }}
           className="text-sm text-rose-400"
         >
-          删除
+          Delete
         </button>
       </div>
       <div className="flex-1 flex items-center justify-center">

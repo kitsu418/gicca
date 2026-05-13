@@ -24,9 +24,9 @@ export default function Backup() {
     setMessage(null);
     try {
       await downloadBackup();
-      setMessage('已生成加密备份，请保存到 iCloud Drive / 任意云盘或发送到另一台设备。');
+      setMessage('Encrypted backup generated — save it to iCloud Drive, any cloud, or send it to another device.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : '导出失败');
+      setError(e instanceof Error ? e.message : 'Export failed');
     } finally {
       setBusy(false);
     }
@@ -40,8 +40,8 @@ export default function Backup() {
     try {
       const parsed = await readBackup(file);
       const exportedAt = new Date(parsed.exportedAt).toLocaleString();
-      const ok = confirm(
-        `这会覆盖当前设备的所有数据。\n备份时间：${exportedAt}\n卡片：${parsed.payload.cards.length} 张\n\n继续？`,
+      const ok = window.confirm(
+        `This will replace all data on this device.\nBackup date: ${exportedAt}\nCards: ${parsed.payload.cards.length}\n\nContinue?`,
       );
       if (!ok) {
         setBusy(false);
@@ -53,11 +53,11 @@ export default function Backup() {
       lockSession();
       refreshVaultStatus();
       setSummary(result);
-      setMessage('导入成功。下次解锁请用导出源设备的主密码 / 恢复码。');
+      setMessage('Import succeeded. Unlock with the source device\'s master password or recovery code.');
       // Bounce them to the lock screen after a beat.
       setTimeout(() => navigate('/unlock', { replace: true }), 1500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : '导入失败');
+      setError(e instanceof Error ? e.message : 'Import failed');
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -69,31 +69,33 @@ export default function Backup() {
       <div className="max-w-md mx-auto p-6 space-y-6">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-sm text-slate-400 hover:text-slate-100">
-            ← 返回
+            ← Back
           </button>
-          <h1 className="text-xl font-semibold">备份 / 迁移</h1>
+          <h1 className="text-xl font-semibold">Backup / Migrate</h1>
         </div>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
           <div className="space-y-1">
-            <h2 className="font-medium">导出加密备份</h2>
+            <h2 className="font-medium">Export encrypted backup</h2>
             <p className="text-sm text-slate-400 leading-relaxed">
-              生成一个 <code>.gicca</code> 文件，包含所有卡片、照片、记录和当前的解锁
-              方式（主密码、恢复码、生物识别 wrap）。文件本身已加密，存到 iCloud Drive
-              / Google Drive / 邮件都可以。
+              Generates a <code>.gicca</code> file containing every card, photo,
+              transaction, and the current unlock material (password wrap,
+              recovery wrap, biometric wraps). The file itself is encrypted —
+              storing it on iCloud Drive, Google Drive, or email is safe.
             </p>
           </div>
           <Button className="w-full" onClick={handleExport} disabled={busy}>
-            {busy ? '处理中…' : '导出'}
+            {busy ? 'Working…' : 'Export'}
           </Button>
         </section>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
           <div className="space-y-1">
-            <h2 className="font-medium">从备份导入</h2>
+            <h2 className="font-medium">Import from backup</h2>
             <p className="text-sm text-slate-400 leading-relaxed">
-              <strong className="text-rose-400">会覆盖当前设备上的所有数据</strong>。
-              用于新设备初始化或迁移。导入后需要用源设备的主密码或恢复码解锁。
+              <strong className="text-rose-400">Replaces all data on this device.</strong>
+              {' '}Use for new-device setup or migration. After import, unlock with
+              the master password or recovery code from the source device.
             </p>
           </div>
           <input
@@ -112,7 +114,7 @@ export default function Backup() {
             onClick={() => fileRef.current?.click()}
             disabled={busy}
           >
-            {busy ? '处理中…' : '选择 .gicca 文件'}
+            {busy ? 'Working…' : 'Choose .gicca file'}
           </Button>
         </section>
 
@@ -121,8 +123,8 @@ export default function Backup() {
         )}
         {summary && (
           <p className="text-xs text-slate-400">
-            导入了 {summary.cards} 张卡片、{summary.transactions} 条记录、
-            {summary.attachments} 张照片、{summary.userMerchants} 个自定义商户。
+            Imported {summary.cards} card(s), {summary.transactions} activity entries,
+            {' '}{summary.attachments} photo(s), {summary.userMerchants} custom merchant(s).
           </p>
         )}
         {error && <p className="text-sm text-rose-400">{error}</p>}

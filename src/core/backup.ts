@@ -115,7 +115,7 @@ export function suggestedBackupFilename(): string {
 
 /**
  * Triggers a download or share. iOS Safari surfaces the share sheet (so the
- * user can pick AirDrop / 文件 / 邮件 / WeChat); desktop browsers fall back
+ * user can pick AirDrop / Mail / iMessage / etc.); desktop browsers fall back
  * to a regular download.
  */
 export async function downloadBackup(): Promise<void> {
@@ -161,11 +161,11 @@ export async function readBackup(file: File): Promise<BackupFile> {
   try {
     parsed = JSON.parse(text, reviver) as BackupFile;
   } catch {
-    throw new Error('文件不是有效的 JSON');
+    throw new Error('File is not valid JSON');
   }
-  if (parsed?.magic !== MAGIC) throw new Error('文件格式不匹配');
+  if (parsed?.magic !== MAGIC) throw new Error('File does not look like a Gicca backup');
   if (parsed.version !== VERSION) {
-    throw new Error(`不支持的备份版本：${parsed.version}`);
+    throw new Error(`Unsupported backup version: ${parsed.version}`);
   }
   return parsed;
 }

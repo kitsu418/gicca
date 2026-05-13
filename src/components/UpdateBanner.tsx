@@ -24,21 +24,21 @@ export function UpdateBanner() {
     <div className="fixed bottom-20 left-4 right-4 max-w-md mx-auto z-40 rounded-2xl border border-slate-700 bg-slate-900/95 backdrop-blur p-4 shadow-xl">
       {needRefresh ? (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-slate-200">有新版本可用</p>
+          <p className="text-sm text-slate-200">A new version is available</p>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setNeedRefresh(false)}>
-              稍后
+              Later
             </Button>
             <Button onClick={() => updateServiceWorker(true)}>
-              更新
+              Update
             </Button>
           </div>
         </div>
       ) : (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-slate-300">已可离线使用</p>
+          <p className="text-sm text-slate-300">Ready to work offline</p>
           <Button variant="ghost" onClick={() => setOfflineReady(false)}>
-            知道了
+            OK
           </Button>
         </div>
       )}

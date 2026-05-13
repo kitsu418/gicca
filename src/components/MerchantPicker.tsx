@@ -3,7 +3,7 @@
 // Behaviour:
 //   - The "trigger" shows the currently selected merchant (or a placeholder).
 //   - Tap to open a panel with a search field + scrolling list.
-//   - If the query matches nothing exactly, a "新建商户" affordance appears.
+//   - If the query matches nothing exactly, a "New merchant" affordance appears.
 
 import { useMemo, useState } from 'react';
 import { Button, Input } from './ui';
@@ -79,12 +79,12 @@ export function MerchantPicker({ value, onChange }: Props) {
             <div className="min-w-0">
               <div className="font-medium truncate">{value.name}</div>
               {value.source === 'user' && (
-                <div className="text-xs text-slate-500">自定义</div>
+                <div className="text-xs text-slate-500">Custom</div>
               )}
             </div>
           </>
         ) : (
-          <span className="text-slate-500">选择商户…</span>
+          <span className="text-slate-500">Pick a merchant…</span>
         )}
       </button>
     );
@@ -94,7 +94,7 @@ export function MerchantPicker({ value, onChange }: Props) {
     <div className="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
       <div className="p-2 border-b border-slate-700/60">
         <Input
-          placeholder="搜索商户…"
+          placeholder="Search merchants…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           autoFocus
@@ -103,7 +103,7 @@ export function MerchantPicker({ value, onChange }: Props) {
       <div className="max-h-72 overflow-y-auto">
         {results.length === 0 && (
           <div className="px-3 py-6 text-center text-sm text-slate-500">
-            没有匹配的商户
+            No merchants match
           </div>
         )}
         {results.map((m) => (
@@ -123,7 +123,7 @@ export function MerchantPicker({ value, onChange }: Props) {
               )}
             </div>
             {m.source === 'user' && (
-              <span className="text-xs text-slate-500">自定义</span>
+              <span className="text-xs text-slate-500">Custom</span>
             )}
           </button>
         ))}
@@ -138,18 +138,18 @@ export function MerchantPicker({ value, onChange }: Props) {
               if (query && !exactExists) setNewName(query);
             }}
           >
-            + 新建商户{query && !exactExists ? `「${query}」` : ''}
+            + New merchant{query && !exactExists ? ` "${query}"` : ''}
           </Button>
         ) : (
           <div className="space-y-2 p-2">
             <Input
-              label="名称"
+              label="Name"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               autoFocus
             />
             <label className="flex items-center gap-2 text-sm text-slate-300">
-              颜色
+              Color
               <input
                 type="color"
                 value={newColor}
@@ -165,16 +165,16 @@ export function MerchantPicker({ value, onChange }: Props) {
                   setNewName('');
                 }}
               >
-                取消
+                Cancel
               </Button>
               <Button className="flex-1" disabled={!newName.trim()} onClick={handleCreate}>
-                创建并使用
+                Create & use
               </Button>
             </div>
           </div>
         )}
         <Button variant="ghost" className="w-full" onClick={() => setOpen(false)}>
-          关闭
+          Close
         </Button>
       </div>
     </div>

@@ -26,11 +26,11 @@ export default function AddCard() {
             onClick={() => navigate(-1)}
             className="text-sm text-slate-400 hover:text-slate-100"
           >
-            ← 返回
+            ← Back
           </button>
-          <h1 className="text-xl font-semibold">添加礼品卡</h1>
+          <h1 className="text-xl font-semibold">Add gift card</h1>
         </div>
-        <CardForm submitLabel="保存" onSubmit={handleSubmit} />
+        <CardForm submitLabel="Save" onSubmit={handleSubmit} />
       </div>
     </Screen>
   );
