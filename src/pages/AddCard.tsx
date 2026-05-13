@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Screen } from '../components/ui';
-import { CardForm, type SubmittedCard } from './CardForm';
+import { Button, Screen } from '../components/ui';
+import { BarcodeScanner } from '../components/BarcodeScanner';
+import { CardForm, type CardFormValues, type SubmittedCard } from './CardForm';
 import { createCard } from '../core/cards';
 
 export default function AddCard() {
   const navigate = useNavigate();
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [prefill, setPrefill] = useState<Partial<CardFormValues> | undefined>();
 
   async function handleSubmit(v: SubmittedCard) {
     const card = await createCard({
@@ -23,18 +27,34 @@ export default function AddCard() {
 
   return (
     <Screen>
-      <div className="max-w-md mx-auto p-6 space-y-6">
-        <div className="flex items-center gap-3">
+      <div className="max-w-md mx-auto p-6 space-y-5">
+        <div className="flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
             className="text-sm text-slate-400 hover:text-slate-100"
           >
             ← Back
           </button>
-          <h1 className="text-xl font-semibold">Add gift card</h1>
+          <Button variant="secondary" onClick={() => setScannerOpen(true)}>
+            Scan barcode
+          </Button>
         </div>
-        <CardForm submitLabel="Save" onSubmit={handleSubmit} />
+        <h1 className="text-xl font-semibold">Add gift card</h1>
+        <CardForm submitLabel="Save" onSubmit={handleSubmit} prefill={prefill} />
       </div>
+
+      {scannerOpen && (
+        <BarcodeScanner
+          onDetected={(value, format) => {
+            setPrefill({
+              cardNumber: value,
+              ...(format && { barcodeFormat: format, barcodeValue: '' }),
+            });
+            setScannerOpen(false);
+          }}
+          onClose={() => setScannerOpen(false)}
+        />
+      )}
     </Screen>
   );
 }
