@@ -42,6 +42,15 @@ export async function importAesKey(
 
 // ─── AES-GCM encrypt / decrypt ────────────────────────────────────────────
 
+// WebKit (and the spec) requires `additionalData` to either be a real
+// BufferSource or be absent — passing `undefined` is a validation error and
+// surfaces as "AeadParams: additionalData: Not a BufferSource" on Safari.
+function aeadParams(iv: Uint8Array, aad?: Uint8Array): AesGcmParams {
+  const params: AesGcmParams = { name: 'AES-GCM', iv: iv as BufferSource };
+  if (aad) params.additionalData = aad as BufferSource;
+  return params;
+}
+
 export async function aesGcmEncrypt(
   key: CryptoKey,
   plaintext: Uint8Array,
@@ -49,11 +58,7 @@ export async function aesGcmEncrypt(
 ): Promise<EncryptedEnvelope> {
   const iv = randomBytes(IV_LEN_BYTES);
   const ciphertext = new Uint8Array(
-    await getCrypto().subtle.encrypt(
-      { name: 'AES-GCM', iv: iv as BufferSource, additionalData: aad as BufferSource | undefined },
-      key,
-      plaintext as BufferSource,
-    ),
+    await getCrypto().subtle.encrypt(aeadParams(iv, aad), key, plaintext as BufferSource),
   );
   return { iv, ciphertext };
 }
@@ -64,11 +69,7 @@ export async function aesGcmDecrypt(
   aad?: Uint8Array,
 ): Promise<Uint8Array> {
   const plaintext = await getCrypto().subtle.decrypt(
-    {
-      name: 'AES-GCM',
-      iv: env.iv as BufferSource,
-      additionalData: aad as BufferSource | undefined,
-    },
+    aeadParams(env.iv, aad),
     key,
     env.ciphertext as BufferSource,
   );
