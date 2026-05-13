@@ -1,8 +1,11 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import Setup from './pages/Setup';
 import Unlock from './pages/Unlock';
-import Home from './pages/Home';
+import CardList from './pages/CardList';
+import CardDetail from './pages/CardDetail';
+import AddCard from './pages/AddCard';
+import EditCard from './pages/EditCard';
 import { CenteredCard } from './components/ui';
 import { useVaultSession } from './hooks/useVaultSession';
 import { refreshVaultStatus, useVaultStatus } from './hooks/useVaultStatus';
@@ -31,42 +34,40 @@ export default function App() {
     );
   }
 
+  if (status.state === 'unset' || status.state === 'incomplete') {
+    return (
+      <Routes>
+        <Route path="/setup" element={<Setup />} />
+        <Route path="*" element={<Navigate to="/setup" replace />} />
+      </Routes>
+    );
+  }
+
+  if (!session.unlocked) {
+    return (
+      <Routes>
+        <Route path="/unlock" element={<Unlock />} />
+        <Route path="*" element={<Navigate to="/unlock" replace />} />
+      </Routes>
+    );
+  }
+
+  return <UnlockedRoutes />;
+}
+
+function UnlockedRoutes() {
+  // Send users away from /setup or /unlock once they're inside.
+  const location = useLocation();
+  if (location.pathname === '/setup' || location.pathname === '/unlock') {
+    return <Navigate to="/" replace />;
+  }
   return (
     <Routes>
-      <Route
-        path="/setup"
-        element={
-          status.state === 'unset' || status.state === 'incomplete' ? (
-            <Setup />
-          ) : (
-            <Navigate to={session.unlocked ? '/' : '/unlock'} replace />
-          )
-        }
-      />
-      <Route
-        path="/unlock"
-        element={
-          status.state !== 'ready' ? (
-            <Navigate to="/setup" replace />
-          ) : session.unlocked ? (
-            <Navigate to="/" replace />
-          ) : (
-            <Unlock />
-          )
-        }
-      />
-      <Route
-        path="/*"
-        element={
-          status.state !== 'ready' ? (
-            <Navigate to="/setup" replace />
-          ) : !session.unlocked ? (
-            <Navigate to="/unlock" replace />
-          ) : (
-            <Home />
-          )
-        }
-      />
+      <Route path="/" element={<CardList />} />
+      <Route path="/cards/new" element={<AddCard />} />
+      <Route path="/cards/:id" element={<CardDetail />} />
+      <Route path="/cards/:id/edit" element={<EditCard />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
