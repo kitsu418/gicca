@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, CenteredCard, Input } from '../components/ui';
 import { meta, wipeAll } from '../core/db';
 import { setupVault } from '../core/vault/vault';
-import { getDekRaw, unlockSession } from '../core/vault/session';
+import { getDekRaw, lockSession, unlockSession } from '../core/vault/session';
 import { isBiometricSupported, registerBiometric } from '../core/vault/biometric';
+import { importBackupReplacing, readBackup } from '../core/backup';
 import { refreshVaultStatus } from '../hooks/useVaultStatus';
 
 type Step = 'welcome' | 'password' | 'recovery';
@@ -27,9 +28,32 @@ export default function Setup() {
   const [bioEnabled, setBioEnabled] = useState(false);
   const [bioError, setBioError] = useState<string | null>(null);
 
+  // Import-from-backup state
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
   useEffect(() => {
     isBiometricSupported().then(setBioSupported);
   }, []);
+
+  async function handleImport(file: File) {
+    setImportError(null);
+    try {
+      const parsed = await readBackup(file);
+      const ok = window.confirm(
+        `导入来自 ${new Date(parsed.exportedAt).toLocaleString()} 的备份，共 ${parsed.payload.cards.length} 张卡？`,
+      );
+      if (!ok) return;
+      await importBackupReplacing(file);
+      lockSession();
+      refreshVaultStatus();
+      navigate('/unlock', { replace: true });
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : '导入失败');
+    } finally {
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
 
   async function enableBiometric() {
     setBioError(null);
@@ -122,6 +146,26 @@ export default function Setup() {
           <Button className="w-full" onClick={() => setStep('password')}>
             开始
           </Button>
+          <div className="space-y-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".gicca,application/json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleImport(f);
+              }}
+            />
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => fileRef.current?.click()}
+            >
+              从备份恢复
+            </Button>
+            {importError && <p className="text-xs text-rose-400">{importError}</p>}
+          </div>
         </div>
       )}
 

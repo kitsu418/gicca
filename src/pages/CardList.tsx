@@ -15,8 +15,11 @@ export default function CardList() {
         <header className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Gicca</h1>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => navigate('/backup')} aria-label="备份">
+              备份
+            </Button>
             <Button variant="ghost" onClick={() => navigate('/settings')} aria-label="设置">
-              ⚙
+              设置
             </Button>
             <Button
               variant="ghost"
@@ -26,7 +29,7 @@ export default function CardList() {
               }}
               aria-label="锁定"
             >
-              🔒
+              锁定
             </Button>
           </div>
         </header>
