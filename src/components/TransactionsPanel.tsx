@@ -94,7 +94,7 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
       </div>
 
       {mode !== 'list' && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black animate-[gicca-panel-in_0.22s_cubic-bezier(0.2,0.85,0.3,1)_both]">
           <Input
             label={mode === 'spend' ? 'Amount spent' : 'Amount added'}
             inputMode="decimal"

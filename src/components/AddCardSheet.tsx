@@ -38,7 +38,7 @@ export function AddCardSheet({ onCreated, onClose }: Props) {
 
   return (
     <Screen>
-      <div className="max-w-md mx-auto p-6 space-y-5">
+      <div className="max-w-md mx-auto p-6 space-y-5 animate-[gicca-sheet-up_0.34s_cubic-bezier(0.2,0.85,0.3,1)_both]">
         <div className="flex items-center justify-between gap-3">
           <button
             onClick={onClose}

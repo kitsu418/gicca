@@ -47,13 +47,7 @@ html[data-theme='brutalist'] body {
   }
 }
 
-/* Page transitions via the browser's View Transitions API. React Router
-   triggers a transition when a Link has `viewTransition` or
-   navigate(..., { viewTransition: true }) is called. The root snapshot
-   cross-fades + slightly slides; named elements (each wallet card has a
-   view-transition-name keyed to its id) morph between their list peek
-   position and the detail hero position automatically. Browsers without
-   support just navigate without animation — graceful degradation. */
+/* Page transitions via the browser's View Transitions API. */
 @view-transition {
   navigation: auto;
 }
@@ -80,5 +74,53 @@ html[data-theme='brutalist'] body {
   from {
     opacity: 0;
     transform: translateY(6px);
+  }
+}
+
+/* Reusable enter animations for in-place panels / sheets / modals.
+   Used via Tailwind arbitrary-value classes, e.g.
+       animate-[gicca-sheet-up_0.32s_cubic-bezier(0.2,0.85,0.3,1)_both]
+   The `_both` keyword tells the animation to apply the `from` state
+   immediately so there's no first-frame flash before paint. */
+@keyframes gicca-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gicca-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0.97);
+    transform-origin: top center;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes gicca-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes gicca-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

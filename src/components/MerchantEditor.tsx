@@ -66,11 +66,11 @@ export function MerchantEditor({ merchant, builtinExists, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-end sm:items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-end sm:items-center justify-center p-4 animate-[gicca-backdrop-in_0.22s_ease-out_both]"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-4 shadow-2xl"
+        className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-4 shadow-2xl animate-[gicca-modal-in_0.28s_cubic-bezier(0.2,0.85,0.3,1)_both]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3">

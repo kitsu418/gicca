@@ -111,7 +111,7 @@ export function MerchantPicker({ value, onChange }: Props) {
           )}
         </button>
       ) : (
-        <div className="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
+        <div className="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden animate-[gicca-panel-in_0.22s_cubic-bezier(0.2,0.85,0.3,1)_both]">
           <div className="p-2 border-b border-slate-700/60">
             <Input
               placeholder="Search merchants…"

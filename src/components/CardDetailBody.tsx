@@ -86,7 +86,7 @@ export function CardDetailBody({ card, onRefresh }: Props) {
 function FullscreenCode({ kind, value, onClose }: { kind: CodeKind; value: string; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 cursor-pointer"
+      className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 cursor-pointer animate-[gicca-modal-in_0.25s_cubic-bezier(0.2,0.85,0.3,1)_both]"
       onClick={onClose}
     >
       <Barcode kind={kind} value={value} scale={5} className="!bg-white !p-0" />

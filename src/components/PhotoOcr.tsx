@@ -87,7 +87,7 @@ export function PhotoOcr({ onResult, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/95 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-950/95 flex flex-col animate-[gicca-sheet-up_0.32s_cubic-bezier(0.2,0.85,0.3,1)_both]">
       <header className="flex items-center justify-between p-4 text-white">
         <button onClick={onClose} className="text-sm">
           Cancel
