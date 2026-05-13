@@ -9,19 +9,21 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'icon.svg', 'icon-maskable.svg'],
       manifest: {
         name: 'Gicca — Gift Card Vault',
         short_name: 'Gicca',
         description: 'Encrypted, local-first gift card manager',
+        lang: 'zh-CN',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',
         start_url: '/',
+        scope: '/',
+        orientation: 'portrait',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icon-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+          { src: '/icon-maskable.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
         ],
       },
       workbox: {

@@ -8,6 +8,7 @@ import AddCard from './pages/AddCard';
 import EditCard from './pages/EditCard';
 import Backup from './pages/Backup';
 import Settings from './pages/Settings';
+import { UpdateBanner } from './components/UpdateBanner';
 import { CenteredCard } from './components/ui';
 import { useVaultSession } from './hooks/useVaultSession';
 import { refreshVaultStatus, useVaultStatus } from './hooks/useVaultStatus';
@@ -54,7 +55,12 @@ export default function App() {
     );
   }
 
-  return <UnlockedRoutes />;
+  return (
+    <>
+      <UnlockedRoutes />
+      <UpdateBanner />
+    </>
+  );
 }
 
 function UnlockedRoutes() {
