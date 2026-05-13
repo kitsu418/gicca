@@ -1,46 +1,27 @@
-// Encrypted backup export/import (.gicca file).
+// Plain JSON backup export/import (.gicca file).
 //
-// A backup is a JSON file containing the entire IndexedDB snapshot — vault
-// wraps included. Every card secret and attachment is already AES-GCM
-// encrypted with the DEK; the DEK itself only exists as PBKDF2-/PRF-derived
-// wraps inside the file. The user therefore needs the master password (or
-// recovery code, or a re-registered biometric on the destination device) to
-// decrypt anything after import.
-//
-// Format (v1):
-//   {
-//     magic: "gicca",
-//     version: 1,
-//     exportedAt: ISOString,
-//     payload: {
-//       vault: VaultWrap[],
-//       cards: CardRecord[],
-//       transactions: Transaction[],
-//       attachments: Attachment[],
-//       userMerchants: MerchantDefinition[],
-//       meta: { key, value }[]
-//     }
-//   }
-//
-// Binary fields (Uint8Array) are encoded as `{"$u8": "<base64>"}` envelopes
-// so a future jq-piping user can still understand the shape.
+// Now that there's no encryption, the file is a straight dump of every
+// store: cards, transactions, attachments, user merchants, meta.
+// Treat it like any other unencrypted sensitive file — store it
+// somewhere only you can reach.
 
 import { meta, getDb, wipeAll } from './db';
-import {
-  bytesToBase64,
-  base64ToBytes,
-} from './vault/crypto';
+import type {
+  Attachment,
+  CardRecord,
+  MerchantDefinition,
+  Transaction,
+} from './types';
 
 const MAGIC = 'gicca';
-const VERSION = 1;
+const VERSION = 2;
 
 type Payload = {
-  vault: unknown[];
-  cards: unknown[];
-  transactions: unknown[];
-  attachments: unknown[];
-  userMerchants: unknown[];
-  meta: unknown[];
+  cards: CardRecord[];
+  transactions: Transaction[];
+  attachments: Attachment[];
+  userMerchants: MerchantDefinition[];
+  meta: { key: string; value: unknown }[];
 };
 
 type BackupFile = {
@@ -50,12 +31,22 @@ type BackupFile = {
   payload: Payload;
 };
 
-// ─── Serialisation helpers ────────────────────────────────────────────────
+// Binary fields (attachment.data) are encoded as { "$u8": "<base64>" } so
+// the file stays grep-able and JSON-tooling-friendly.
+function bytesToBase64(bytes: Uint8Array): string {
+  let s = '';
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s);
+}
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
 
 function replacer(_key: string, value: unknown): unknown {
-  if (value instanceof Uint8Array) {
-    return { $u8: bytesToBase64(value) };
-  }
+  if (value instanceof Uint8Array) return { $u8: bytesToBase64(value) };
   return value;
 }
 
@@ -71,20 +62,17 @@ function reviver(_key: string, value: unknown): unknown {
   return value;
 }
 
-// ─── Export ───────────────────────────────────────────────────────────────
-
 export async function exportBackup(): Promise<Blob> {
   const db = await getDb();
   const tx = db.transaction(
-    ['cards', 'transactions', 'attachments', 'merchants', 'vault', 'meta'],
+    ['cards', 'transactions', 'attachments', 'merchants', 'meta'],
     'readonly',
   );
-  const [cards, transactions, attachments, userMerchants, vault, metaRows] = await Promise.all([
+  const [cards, transactions, attachments, userMerchants, metaRows] = await Promise.all([
     tx.objectStore('cards').getAll(),
     tx.objectStore('transactions').getAll(),
     tx.objectStore('attachments').getAll(),
     tx.objectStore('merchants').getAll(),
-    tx.objectStore('vault').getAll(),
     tx.objectStore('meta').getAll(),
   ]);
 
@@ -92,37 +80,21 @@ export async function exportBackup(): Promise<Blob> {
     magic: MAGIC,
     version: VERSION,
     exportedAt: new Date().toISOString(),
-    payload: {
-      vault,
-      cards,
-      transactions,
-      attachments,
-      userMerchants,
-      meta: metaRows,
-    },
+    payload: { cards, transactions, attachments, userMerchants, meta: metaRows },
   };
   const json = JSON.stringify(file, replacer);
   return new Blob([json], { type: 'application/json' });
 }
 
 export function suggestedBackupFilename(): string {
-  const stamp = new Date()
-    .toISOString()
-    .replace(/[:.]/g, '-')
-    .slice(0, 19); // 2026-05-12T15-30-00
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   return `gicca-backup-${stamp}.gicca`;
 }
 
-/**
- * Triggers a download or share. iOS Safari surfaces the share sheet (so the
- * user can pick AirDrop / Mail / iMessage / etc.); desktop browsers fall back
- * to a regular download.
- */
 export async function downloadBackup(): Promise<void> {
   const blob = await exportBackup();
   const filename = suggestedBackupFilename();
 
-  // Prefer Web Share if it can handle files (iOS Safari, Android Chrome).
   const shareNav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
   if (shareNav.canShare) {
     try {
@@ -148,8 +120,6 @@ export async function downloadBackup(): Promise<void> {
   await meta.set('lastBackupAt', new Date().toISOString());
 }
 
-// ─── Import ───────────────────────────────────────────────────────────────
-
 export type ImportSummary = {
   cards: number;
   transactions: number;
@@ -172,38 +142,22 @@ export async function readBackup(file: File): Promise<BackupFile> {
   return parsed;
 }
 
-/**
- * Replaces all local state with the contents of `file`. Use only when the
- * user has explicitly accepted the wipe: existing cards, attachments, and
- * the local vault will all be overwritten.
- *
- * The imported vault wraps are preserved as-is, so unlocking after import
- * requires whatever credential (master password / recovery code / biometric
- * registered on the originating device) the source vault was set up with.
- */
 export async function importBackupReplacing(file: File): Promise<ImportSummary> {
   const data = await readBackup(file);
   await wipeAll();
 
   const db = await getDb();
   const tx = db.transaction(
-    ['cards', 'transactions', 'attachments', 'merchants', 'vault', 'meta'],
+    ['cards', 'transactions', 'attachments', 'merchants', 'meta'],
     'readwrite',
   );
 
-  for (const row of data.payload.cards as never[]) tx.objectStore('cards').put(row);
-  for (const row of data.payload.transactions as never[])
-    tx.objectStore('transactions').put(row);
-  for (const row of data.payload.attachments as never[])
-    tx.objectStore('attachments').put(row);
-  for (const row of data.payload.userMerchants as never[])
-    tx.objectStore('merchants').put(row);
-  for (const row of data.payload.vault as never[]) tx.objectStore('vault').put(row);
-  for (const row of data.payload.meta as never[]) tx.objectStore('meta').put(row);
+  for (const row of data.payload.cards) tx.objectStore('cards').put(row);
+  for (const row of data.payload.transactions) tx.objectStore('transactions').put(row);
+  for (const row of data.payload.attachments) tx.objectStore('attachments').put(row);
+  for (const row of data.payload.userMerchants) tx.objectStore('merchants').put(row);
+  for (const row of data.payload.meta) tx.objectStore('meta').put(row);
   await tx.done;
-
-  // Make sure hasSetup is on so the router treats us as ready.
-  await meta.set('hasSetup', true);
 
   return {
     cards: data.payload.cards.length,

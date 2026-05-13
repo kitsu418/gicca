@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from './ui';
 import {
   addAttachment,
-  decryptAttachment,
+  attachmentBlob,
   deleteAttachment,
   listAttachments,
 } from '../core/attachments';
@@ -111,22 +111,9 @@ function Thumbnail({
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    let blobUrl: string | null = null;
-    (async () => {
-      try {
-        const blob = await decryptAttachment(attachment);
-        if (cancelled) return;
-        blobUrl = URL.createObjectURL(blob);
-        setUrl(blobUrl);
-      } catch {
-        // Leave url null; aspect-ratio placeholder stays visible.
-      }
-    })();
-    return () => {
-      cancelled = true;
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
+    const blobUrl = URL.createObjectURL(attachmentBlob(attachment));
+    setUrl(blobUrl);
+    return () => URL.revokeObjectURL(blobUrl);
   }, [attachment]);
 
   return (
@@ -135,13 +122,7 @@ function Thumbnail({
       onClick={onClick}
       className="aspect-square rounded-xl border border-slate-800 bg-slate-900 overflow-hidden"
     >
-      {url ? (
-        <img src={url} alt="" className="w-full h-full object-cover" />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs">
-          Decrypting
-        </div>
-      )}
+      {url && <img src={url} alt="" className="w-full h-full object-cover" />}
     </button>
   );
 }
@@ -158,22 +139,9 @@ function FullscreenViewer({
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    let blobUrl: string | null = null;
-    (async () => {
-      try {
-        const blob = await decryptAttachment(attachment);
-        if (cancelled) return;
-        blobUrl = URL.createObjectURL(blob);
-        setUrl(blobUrl);
-      } catch {
-        // ignore
-      }
-    })();
-    return () => {
-      cancelled = true;
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
+    const blobUrl = URL.createObjectURL(attachmentBlob(attachment));
+    setUrl(blobUrl);
+    return () => URL.revokeObjectURL(blobUrl);
   }, [attachment]);
 
   return (

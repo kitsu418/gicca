@@ -1,11 +1,10 @@
 // Domain types for Gicca.
 //
 // IndexedDB layout (see db.ts):
-//   cards         — full card records (sensitive fields under `encrypted`)
-//   merchants     — user-defined merchants (builtins ship as JSON, see merchants/)
-//   attachments   — encrypted blobs (photos, screenshots)
-//   transactions  — usage history rows (amounts plaintext, notes encrypted)
-//   vault         — wrapped DEKs (password / biometric / recovery)
+//   cards         — full card records, flat plaintext fields
+//   merchants     — user-defined merchants (builtins ship as JSON)
+//   attachments   — image blobs
+//   transactions  — usage history rows
 //   meta          — key-value app state
 
 export type CardStatus = 'active' | 'used_up' | 'expired' | 'lost' | 'disabled';
@@ -30,28 +29,10 @@ export type MerchantCategory =
   | 'service'
   | 'other';
 
-// Sensitive payload — only exists in memory after decrypt.
-export type CardSecrets = {
-  cardNumber: string;
-  pin?: string;
-  activationCode?: string;
-  barcode?: {
-    format: BarcodeFormat;
-    value: string; // often == cardNumber, but allowed to differ
-  };
-  note?: string;
-};
-
-// Envelope written to IndexedDB.
-export type EncryptedEnvelope = {
-  iv: Uint8Array; // 12 bytes (AES-GCM nonce)
-  ciphertext: Uint8Array; // includes 16-byte GCM tag
-};
-
 export type MerchantSnapshot = {
   name: string;
   color?: string;
-  logo?: string; // path or emoji
+  logo?: string;
 };
 
 export type CardRecord = {
@@ -59,11 +40,18 @@ export type CardRecord = {
   merchantId: string;
   merchantSnapshot: MerchantSnapshot;
 
-  // Value (plaintext, in minor units e.g. cents)
+  // Card identifiers
+  cardNumber: string;
+  pin?: string;
+  activationCode?: string;
+  barcode?: { format: BarcodeFormat; value: string };
+  note?: string;
+
+  // Value (in minor units, e.g. cents)
   initialValue?: number;
   balance?: number;
   purchasePrice?: number;
-  currency?: string; // ISO 4217
+  currency?: string;
 
   // Dates (ISO strings)
   acquiredAt?: string;
@@ -77,9 +65,6 @@ export type CardRecord = {
   giverName?: string;
   orderRef?: string;
   region?: string;
-
-  // Encrypted sensitive payload (CardSecrets after decrypt)
-  encrypted: EncryptedEnvelope;
 
   attachmentIds: string[];
   transactionIds: string[];
@@ -95,8 +80,8 @@ export type Transaction = {
   cardId: string;
   date: string; // ISO
   amount: number; // negative = spend, positive = top-up
-  location?: string; // plaintext
-  encrypted?: EncryptedEnvelope; // optional encrypted note
+  location?: string;
+  note?: string;
   createdAt: string;
 };
 
@@ -115,13 +100,12 @@ export type Attachment = {
   mimeType: string;
   width?: number;
   height?: number;
-  // AES-GCM-encrypted bytes of the (already compressed) image
-  encrypted: EncryptedEnvelope;
+  data: Uint8Array; // raw compressed image bytes
   createdAt: string;
 };
 
 export type MerchantDefinition = {
-  id: string; // stable identifier, e.g. 'starbucks'
+  id: string;
   name: string;
   aliases?: string[];
   logo?: string;
@@ -143,37 +127,8 @@ export type MerchantDefinition = {
   source: 'builtin' | 'user';
 };
 
-// Wraps over the Data Encryption Key (DEK).
-export type WrapKind = 'password' | 'biometric' | 'recovery';
-
-export type VaultWrap = {
-  id: string; // 'password' | `biometric:${credentialId}` | 'recovery'
-  kind: WrapKind;
-  label?: string; // e.g. "iPhone Face ID"
-  // Password / recovery: PBKDF2 params
-  salt?: Uint8Array;
-  iterations?: number;
-  // Biometric: WebAuthn metadata
-  credentialId?: Uint8Array;
-  prfSalt?: Uint8Array;
-  // Common envelope
-  iv: Uint8Array;
-  wrappedDek: Uint8Array; // AES-GCM(wrapKey, DEK)
-  createdAt: string;
-};
-
-export type MetaRecord = {
-  key: string;
-  value: unknown;
-};
-
-// Type-safe meta keys.
 export type MetaKeys = {
   schemaVersion: number;
-  hasSetup: boolean;
-  recoveryAcknowledged: boolean;
-  dictVersion: number;
   lastBackupAt: string;
-  autoLockMs: number;
   preferredCurrency: string;
 };

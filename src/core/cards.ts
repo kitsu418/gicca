@@ -1,14 +1,8 @@
-// Cards service.
-//
-// Hides the split between plaintext metadata (always readable) and the
-// encrypted secrets envelope (decryptable only with the unlocked DEK).
-// Components shouldn't need to touch CardRecord.encrypted directly.
+// Cards service — plaintext, no encryption layer.
 
 import { useEffect, useSyncExternalStore } from 'react';
 import { cards as cardsStore } from './db';
-import type { CardRecord, CardSecrets, MerchantDefinition } from './types';
-import { decryptCardSecrets, encryptCardSecrets } from './vault/vault';
-import { requireDek } from './vault/session';
+import type { BarcodeFormat, CardRecord, MerchantDefinition } from './types';
 
 // ─── In-memory cache + pub/sub ────────────────────────────────────────────
 
@@ -41,13 +35,13 @@ export async function getCard(id: string): Promise<CardRecord | undefined> {
   return cardsStore.get(id);
 }
 
-export async function getCardSecrets(card: CardRecord): Promise<CardSecrets> {
-  return decryptCardSecrets(requireDek(), card.encrypted);
-}
-
 export type CardInput = {
   merchant: MerchantDefinition;
-  secrets: CardSecrets;
+  cardNumber: string;
+  pin?: string;
+  activationCode?: string;
+  barcode?: { format: BarcodeFormat; value: string };
+  note?: string;
   initialValue?: number;
   balance?: number;
   purchasePrice?: number;
@@ -65,7 +59,6 @@ export type CardInput = {
 
 export async function createCard(input: CardInput): Promise<CardRecord> {
   const now = new Date().toISOString();
-  const encrypted = await encryptCardSecrets(requireDek(), input.secrets);
   const record: CardRecord = {
     id: crypto.randomUUID(),
     merchantId: input.merchant.id,
@@ -74,6 +67,11 @@ export async function createCard(input: CardInput): Promise<CardRecord> {
       color: input.merchant.color,
       logo: input.merchant.logo,
     },
+    cardNumber: input.cardNumber,
+    pin: input.pin,
+    activationCode: input.activationCode,
+    barcode: input.barcode,
+    note: input.note,
     initialValue: input.initialValue,
     balance: input.balance,
     purchasePrice: input.purchasePrice,
@@ -87,7 +85,6 @@ export async function createCard(input: CardInput): Promise<CardRecord> {
     giverName: input.giverName,
     orderRef: input.orderRef,
     region: input.region,
-    encrypted,
     attachmentIds: [],
     transactionIds: [],
     createdAt: now,
@@ -100,14 +97,10 @@ export async function createCard(input: CardInput): Promise<CardRecord> {
 
 export async function updateCard(
   id: string,
-  patch: Partial<CardInput> & { secrets?: CardSecrets; merchant?: MerchantDefinition },
+  patch: Partial<CardInput> & { merchant?: MerchantDefinition },
 ): Promise<CardRecord> {
   const existing = await cardsStore.get(id);
   if (!existing) throw new Error(`card ${id} not found`);
-
-  const encrypted = patch.secrets
-    ? await encryptCardSecrets(requireDek(), patch.secrets)
-    : existing.encrypted;
 
   const next: CardRecord = {
     ...existing,
@@ -119,6 +112,11 @@ export async function updateCard(
         logo: patch.merchant.logo,
       },
     }),
+    cardNumber: patch.cardNumber ?? existing.cardNumber,
+    pin: patch.pin ?? existing.pin,
+    activationCode: patch.activationCode ?? existing.activationCode,
+    barcode: patch.barcode ?? existing.barcode,
+    note: patch.note ?? existing.note,
     initialValue: patch.initialValue ?? existing.initialValue,
     balance: patch.balance ?? existing.balance,
     purchasePrice: patch.purchasePrice ?? existing.purchasePrice,
@@ -132,7 +130,6 @@ export async function updateCard(
     giverName: patch.giverName ?? existing.giverName,
     orderRef: patch.orderRef ?? existing.orderRef,
     region: patch.region ?? existing.region,
-    encrypted,
     updatedAt: new Date().toISOString(),
   };
   await cardsStore.put(next);
@@ -141,8 +138,6 @@ export async function updateCard(
 }
 
 export async function deleteCard(id: string): Promise<void> {
-  // Soft delete preserves the row for sync; hard delete is a separate option
-  // in settings.
   await cardsStore.softDelete(id);
   await refresh();
 }

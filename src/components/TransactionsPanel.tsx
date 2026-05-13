@@ -6,8 +6,8 @@ import {
   addTransaction,
   deleteTransaction,
   listTransactions,
-  type ResolvedTransaction,
 } from '../core/transactions';
+import type { Transaction } from '../core/types';
 
 type Props = {
   cardId: string;
@@ -18,7 +18,7 @@ type Props = {
 type Mode = 'list' | 'spend' | 'topup';
 
 export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
-  const [items, setItems] = useState<ResolvedTransaction[]>([]);
+  const [items, setItems] = useState<Transaction[]>([]);
   const [mode, setMode] = useState<Mode>('list');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -147,9 +147,9 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
                     {new Date(t.date).toLocaleDateString()}
                   </span>
                 </div>
-                {(t.location || t.decryptedNote) && (
+                {(t.location || t.note) && (
                   <div className="text-xs text-slate-400 mt-0.5 truncate">
-                    {[t.location, t.decryptedNote].filter(Boolean).join(' · ')}
+                    {[t.location, t.note].filter(Boolean).join(' · ')}
                   </div>
                 )}
               </div>

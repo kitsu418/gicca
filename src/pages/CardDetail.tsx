@@ -5,15 +5,14 @@ import { MerchantBadge } from '../components/MerchantBadge';
 import { Barcode } from '../components/Barcode';
 import { AttachmentGallery } from '../components/AttachmentGallery';
 import { TransactionsPanel } from '../components/TransactionsPanel';
-import { deleteCard, getCard, getCardSecrets } from '../core/cards';
+import { deleteCard, getCard } from '../core/cards';
 import { getMerchant } from '../core/merchants';
-import type { BarcodeFormat, CardRecord, CardSecrets } from '../core/types';
+import type { BarcodeFormat, CardRecord } from '../core/types';
 
 export default function CardDetail() {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [card, setCard] = useState<CardRecord | null>(null);
-  const [secrets, setSecrets] = useState<CardSecrets | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [fullscreenBarcode, setFullscreenBarcode] = useState(false);
@@ -29,9 +28,6 @@ export default function CardDetail() {
         }
         if (cancelled) return;
         setCard(c);
-        const s = await getCardSecrets(c);
-        if (cancelled) return;
-        setSecrets(s);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not load card');
       }
@@ -51,8 +47,7 @@ export default function CardDetail() {
     try {
       await navigator.clipboard.writeText(s);
     } catch {
-      // Ignore — Safari can refuse clipboard write without user gesture; the
-      // button itself counts as a gesture but iOS PWAs sometimes still block.
+      // ignore
     }
   }
 
@@ -76,6 +71,8 @@ export default function CardDetail() {
       </Screen>
     );
   }
+
+  const barcode = resolveBarcode(card);
 
   return (
     <Screen>
@@ -114,54 +111,46 @@ export default function CardDetail() {
           </div>
         </div>
 
-        {secrets && (() => {
-          const bc = resolveBarcode(card, secrets);
-          if (!bc) return null;
-          return (
-            <button
-              type="button"
-              onClick={() => setFullscreenBarcode(true)}
-              className="block w-full text-left"
-              title="Tap to enlarge"
-            >
-              <Barcode format={bc.format} value={bc.value} scale={2} />
-            </button>
-          );
-        })()}
-
-        {secrets ? (
-          <div className="space-y-3">
-            <SecretField
-              label="Card number"
-              value={secrets.cardNumber}
-              revealed={revealed}
-              onCopy={() => copy(secrets.cardNumber)}
-            />
-            {secrets.pin && (
-              <SecretField
-                label="PIN"
-                value={secrets.pin}
-                revealed={revealed}
-                onCopy={() => copy(secrets.pin!)}
-              />
-            )}
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => setRevealed((r) => !r)}
-            >
-              {revealed ? 'Hide secrets' : 'Reveal secrets'}
-            </Button>
-            {secrets.note && (
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-                <div className="text-xs text-slate-500 mb-1">Notes</div>
-                <p className="text-sm whitespace-pre-wrap">{secrets.note}</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-slate-500 text-sm">Decrypting…</div>
+        {barcode && (
+          <button
+            type="button"
+            onClick={() => setFullscreenBarcode(true)}
+            className="block w-full text-left"
+            title="Tap to enlarge"
+          >
+            <Barcode format={barcode.format} value={barcode.value} scale={2} />
+          </button>
         )}
+
+        <div className="space-y-3">
+          <SecretField
+            label="Card number"
+            value={card.cardNumber}
+            revealed={revealed}
+            onCopy={() => copy(card.cardNumber)}
+          />
+          {card.pin && (
+            <SecretField
+              label="PIN"
+              value={card.pin}
+              revealed={revealed}
+              onCopy={() => copy(card.pin!)}
+            />
+          )}
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={() => setRevealed((r) => !r)}
+          >
+            {revealed ? 'Hide values' : 'Reveal values'}
+          </Button>
+          {card.note && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+              <div className="text-xs text-slate-500 mb-1">Notes</div>
+              <p className="text-sm whitespace-pre-wrap">{card.note}</p>
+            </div>
+          )}
+        </div>
 
         <div className="space-y-2 text-sm text-slate-400">
           {card.initialValue != null && (
@@ -184,20 +173,17 @@ export default function CardDetail() {
         <AttachmentGallery cardId={card.id} />
       </div>
 
-      {fullscreenBarcode && secrets && (() => {
-        const bc = resolveBarcode(card, secrets);
-        if (!bc) return null;
-        return <FullscreenBarcode format={bc.format} value={bc.value} onClose={() => setFullscreenBarcode(false)} />;
-      })()}
+      {fullscreenBarcode && barcode && (
+        <FullscreenBarcode
+          format={barcode.format}
+          value={barcode.value}
+          onClose={() => setFullscreenBarcode(false)}
+        />
+      )}
     </Screen>
   );
 }
 
-/**
- * Locks the screen to a high-contrast checkout view. Tapping anywhere
- * dismisses. The white-on-black layout maxes out display contrast for
- * point-of-sale scanners, which can struggle with dim AMOLED themes.
- */
 function FullscreenBarcode({
   format,
   value,
@@ -221,15 +207,12 @@ function FullscreenBarcode({
   );
 }
 
-function resolveBarcode(
-  card: CardRecord,
-  secrets: CardSecrets,
-): { format: BarcodeFormat; value: string } | null {
-  if (secrets.barcode) return secrets.barcode;
+function resolveBarcode(card: CardRecord): { format: BarcodeFormat; value: string } | null {
+  if (card.barcode) return card.barcode;
   const merchant = getMerchant(card.merchantId);
   const fmt = merchant?.cardFormat?.barcodeFormat;
   if (!fmt) return null;
-  return { format: fmt, value: secrets.cardNumber };
+  return { format: fmt, value: card.cardNumber };
 }
 
 function SecretField({

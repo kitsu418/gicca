@@ -1,16 +1,10 @@
-// Shared form used by the Add and Edit pages. Pre-fills from `initial` when
-// editing; on submit calls `onSubmit(values, secrets)` and lets the caller
-// decide whether to create or update.
+// Shared form used by Add and Edit. Pre-fills from `initial` when editing;
+// submits go through `onSubmit`.
 
 import { useEffect, useState } from 'react';
 import { Button, Input } from '../components/ui';
 import { MerchantPicker } from '../components/MerchantPicker';
-import type {
-  BarcodeFormat,
-  CardRecord,
-  CardSecrets,
-  MerchantDefinition,
-} from '../core/types';
+import type { BarcodeFormat, CardRecord, MerchantDefinition } from '../core/types';
 import { getMerchant } from '../core/merchants';
 
 type BarcodeChoice = '' | BarcodeFormat;
@@ -53,28 +47,29 @@ const empty: CardFormValues = {
   barcodeValue: '',
 };
 
-type Props = {
-  initial?: CardRecord;
-  initialSecrets?: CardSecrets;
-  submitLabel: string;
-  onSubmit: (values: SubmittedCard) => Promise<void>;
-};
-
 export type SubmittedCard = {
   merchant: MerchantDefinition;
-  secrets: CardSecrets;
+  cardNumber: string;
+  pin?: string;
+  note?: string;
+  barcode?: { format: BarcodeFormat; value: string };
   initialValue?: number;
   balance?: number;
   currency?: string;
   expiresAt?: string;
 };
 
-export function CardForm({ initial, initialSecrets, submitLabel, onSubmit }: Props) {
+type Props = {
+  initial?: CardRecord;
+  submitLabel: string;
+  onSubmit: (values: SubmittedCard) => Promise<void>;
+  prefill?: Partial<CardFormValues>;
+};
+
+export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
   const [values, setValues] = useState<CardFormValues>(empty);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  // Track whether the user has touched the barcode controls manually. If they
-  // haven't, swapping merchants should refresh the suggested format.
   const [barcodeTouched, setBarcodeTouched] = useState(false);
 
   useEffect(() => {
@@ -89,21 +84,27 @@ export function CardForm({ initial, initialSecrets, submitLabel, onSubmit }: Pro
     };
     setValues({
       merchant,
-      cardNumber: initialSecrets?.cardNumber ?? '',
-      pin: initialSecrets?.pin ?? '',
-      note: initialSecrets?.note ?? '',
+      cardNumber: initial.cardNumber,
+      pin: initial.pin ?? '',
+      note: initial.note ?? '',
       initialValue: initial.initialValue != null ? (initial.initialValue / 100).toString() : '',
       balance: initial.balance != null ? (initial.balance / 100).toString() : '',
       currency: initial.currency ?? '',
       expiresAt: initial.expiresAt?.slice(0, 10) ?? '',
-      barcodeFormat: initialSecrets?.barcode?.format ?? '',
+      barcodeFormat: initial.barcode?.format ?? '',
       barcodeValue:
-        initialSecrets?.barcode && initialSecrets.barcode.value !== initialSecrets.cardNumber
-          ? initialSecrets.barcode.value
+        initial.barcode && initial.barcode.value !== initial.cardNumber
+          ? initial.barcode.value
           : '',
     });
     setBarcodeTouched(true);
-  }, [initial, initialSecrets]);
+  }, [initial]);
+
+  useEffect(() => {
+    if (!prefill) return;
+    setValues((v) => ({ ...v, ...prefill }));
+    if (prefill.barcodeFormat || prefill.barcodeValue) setBarcodeTouched(true);
+  }, [prefill]);
 
   function update<K extends keyof CardFormValues>(key: K, val: CardFormValues[K]) {
     setValues((v) => ({ ...v, [key]: val }));
@@ -133,17 +134,14 @@ export function CardForm({ initial, initialSecrets, submitLabel, onSubmit }: Pro
     try {
       const cardNumber = values.cardNumber.trim();
       const barcodeValue = values.barcodeValue.trim() || cardNumber;
-      const secrets: CardSecrets = {
-        cardNumber,
-        ...(values.pin.trim() && { pin: values.pin.trim() }),
-        ...(values.note.trim() && { note: values.note.trim() }),
-        ...(values.barcodeFormat && {
-          barcode: { format: values.barcodeFormat, value: barcodeValue },
-        }),
-      };
       await onSubmit({
         merchant: values.merchant,
-        secrets,
+        cardNumber,
+        pin: values.pin.trim() || undefined,
+        note: values.note.trim() || undefined,
+        barcode: values.barcodeFormat
+          ? { format: values.barcodeFormat, value: barcodeValue }
+          : undefined,
         initialValue: parseMoney(values.initialValue),
         balance: parseMoney(values.balance),
         currency: values.currency.trim() || values.merchant.defaultCurrency || undefined,

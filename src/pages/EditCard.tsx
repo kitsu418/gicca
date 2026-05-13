@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Screen } from '../components/ui';
 import { CardForm, type SubmittedCard } from './CardForm';
-import { getCard, getCardSecrets, updateCard } from '../core/cards';
-import type { CardRecord, CardSecrets } from '../core/types';
+import { getCard, updateCard } from '../core/cards';
+import type { CardRecord } from '../core/types';
 
 export default function EditCard() {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [card, setCard] = useState<CardRecord | null>(null);
-  const [secrets, setSecrets] = useState<CardSecrets | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,10 +20,8 @@ export default function EditCard() {
           setError('Card not found');
           return;
         }
-        const s = await getCardSecrets(c);
         if (cancelled) return;
         setCard(c);
-        setSecrets(s);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not load card');
       }
@@ -37,7 +34,10 @@ export default function EditCard() {
   async function handleSubmit(v: SubmittedCard) {
     await updateCard(id, {
       merchant: v.merchant,
-      secrets: v.secrets,
+      cardNumber: v.cardNumber,
+      pin: v.pin,
+      note: v.note,
+      barcode: v.barcode,
       initialValue: v.initialValue,
       balance: v.balance,
       currency: v.currency,
@@ -56,10 +56,9 @@ export default function EditCard() {
           <h1 className="text-xl font-semibold">Edit gift card</h1>
         </div>
         {error && <p className="text-sm text-rose-400">{error}</p>}
-        {card && secrets && (
+        {card && (
           <CardForm
             initial={card}
-            initialSecrets={secrets}
             submitLabel="Save changes"
             onSubmit={handleSubmit}
           />

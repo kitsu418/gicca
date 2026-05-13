@@ -5,11 +5,13 @@ import type {
   MerchantDefinition,
   MetaKeys,
   Transaction,
-  VaultWrap,
 } from './types';
 
 const DB_NAME = 'gicca';
-const DB_VERSION = 1;
+// v2 dropped the encryption layer. Records from v1 were stored as
+// AES-GCM envelopes whose DEK is no longer reachable, so the upgrade
+// path simply wipes everything rather than carrying garbage forward.
+const DB_VERSION = 2;
 
 interface GiccaSchema extends DBSchema {
   cards: {
@@ -36,11 +38,6 @@ interface GiccaSchema extends DBSchema {
     value: Transaction;
     indexes: { byCard: string; byDate: string };
   };
-  vault: {
-    key: string;
-    value: VaultWrap;
-    indexes: { byKind: string };
-  };
   meta: {
     key: string;
     value: { key: string; value: unknown };
@@ -52,7 +49,23 @@ let dbPromise: Promise<IDBPDatabase<GiccaSchema>> | null = null;
 export function getDb(): Promise<IDBPDatabase<GiccaSchema>> {
   if (!dbPromise) {
     dbPromise = openDB<GiccaSchema>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion) {
+        // Anything from the encrypted era is dead weight — clear it out.
+        if (oldVersion > 0) {
+          for (const name of [
+            'cards',
+            'merchants',
+            'attachments',
+            'transactions',
+            'vault',
+            'meta',
+          ] as const) {
+            if (db.objectStoreNames.contains(name as never)) {
+              db.deleteObjectStore(name as never);
+            }
+          }
+        }
+
         const cards = db.createObjectStore('cards', { keyPath: 'id' });
         cards.createIndex('byMerchant', 'merchantId');
         cards.createIndex('byStatus', 'status');
@@ -67,9 +80,6 @@ export function getDb(): Promise<IDBPDatabase<GiccaSchema>> {
         const transactions = db.createObjectStore('transactions', { keyPath: 'id' });
         transactions.createIndex('byCard', 'cardId');
         transactions.createIndex('byDate', 'date');
-
-        const vault = db.createObjectStore('vault', { keyPath: 'id' });
-        vault.createIndex('byKind', 'kind');
 
         db.createObjectStore('meta', { keyPath: 'key' });
       },
@@ -157,26 +167,6 @@ export const transactions = {
   },
 };
 
-// ─── Vault (wrapped DEKs) ─────────────────────────────────────────────────
-
-export const vault = {
-  async get(id: string): Promise<VaultWrap | undefined> {
-    return (await getDb()).get('vault', id);
-  },
-  async list(): Promise<VaultWrap[]> {
-    return (await getDb()).getAll('vault');
-  },
-  async byKind(kind: VaultWrap['kind']): Promise<VaultWrap[]> {
-    return (await getDb()).getAllFromIndex('vault', 'byKind', kind);
-  },
-  async put(w: VaultWrap): Promise<void> {
-    await (await getDb()).put('vault', w);
-  },
-  async delete(id: string): Promise<void> {
-    await (await getDb()).delete('vault', id);
-  },
-};
-
 // ─── Meta (typed key-value) ───────────────────────────────────────────────
 
 export const meta = {
@@ -192,11 +182,10 @@ export const meta = {
   },
 };
 
-// Wipe everything — used by "reset app" in settings.
 export async function wipeAll(): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(
-    ['cards', 'merchants', 'attachments', 'transactions', 'vault', 'meta'],
+    ['cards', 'merchants', 'attachments', 'transactions', 'meta'],
     'readwrite',
   );
   await Promise.all([
@@ -204,7 +193,6 @@ export async function wipeAll(): Promise<void> {
     tx.objectStore('merchants').clear(),
     tx.objectStore('attachments').clear(),
     tx.objectStore('transactions').clear(),
-    tx.objectStore('vault').clear(),
     tx.objectStore('meta').clear(),
   ]);
   await tx.done;

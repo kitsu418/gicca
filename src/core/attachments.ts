@@ -1,19 +1,10 @@
-// Photo attachments: client-side compress → AES-GCM encrypt → IndexedDB blob.
-//
-// All photos for a card live in the `attachments` store. The attachment row's
-// id is also tracked on the parent CardRecord.attachmentIds list so we can
-// blow them away together when the card is hard-deleted (soft delete keeps
-// them around).
+// Photo attachments: client-side compress → raw bytes in IndexedDB.
 
 import { cards as cardsStore, attachments as attachmentsStore } from './db';
-import { requireDek } from './vault/session';
-import { aesGcmDecrypt, aesGcmEncrypt } from './vault/crypto';
-import type { Attachment, AttachmentKind, EncryptedEnvelope } from './types';
+import type { Attachment, AttachmentKind } from './types';
 
 const MAX_DIMENSION = 1600;
 const JPEG_QUALITY = 0.85;
-
-// ─── Client-side compression ──────────────────────────────────────────────
 
 async function compressImage(file: File): Promise<{
   bytes: Uint8Array;
@@ -43,8 +34,6 @@ async function compressImage(file: File): Promise<{
   return { bytes, mimeType: blob.type, width, height };
 }
 
-// ─── Mutations ────────────────────────────────────────────────────────────
-
 export async function addAttachment(
   cardId: string,
   file: File,
@@ -54,7 +43,6 @@ export async function addAttachment(
   if (!card) throw new Error(`card ${cardId} not found`);
 
   const compressed = await compressImage(file);
-  const envelope = await aesGcmEncrypt(requireDek(), compressed.bytes);
   const attachment: Attachment = {
     id: crypto.randomUUID(),
     cardId,
@@ -62,7 +50,7 @@ export async function addAttachment(
     mimeType: compressed.mimeType,
     width: compressed.width,
     height: compressed.height,
-    encrypted: envelope,
+    data: compressed.bytes,
     createdAt: new Date().toISOString(),
   };
   await attachmentsStore.put(attachment);
@@ -87,16 +75,12 @@ export async function deleteAttachment(cardId: string, attachmentId: string): Pr
   });
 }
 
-// ─── Read / decrypt ───────────────────────────────────────────────────────
-
 export async function listAttachments(cardId: string): Promise<Attachment[]> {
   return attachmentsStore.byCard(cardId);
 }
 
-export async function decryptAttachment(att: Attachment): Promise<Blob> {
-  const bytes = await aesGcmDecrypt(requireDek(), att.encrypted as EncryptedEnvelope);
-  // BlobPart accepts Uint8Array directly; using its underlying buffer would be
-  // wrong when the array is a view into a larger buffer.
-  const arr = new Uint8Array(bytes);
-  return new Blob([arr], { type: att.mimeType });
+export function attachmentBlob(att: Attachment): Blob {
+  // BlobPart requires a typed-array view backed by ArrayBuffer (not
+  // SharedArrayBuffer); the wrap forces TS into the right overload.
+  return new Blob([new Uint8Array(att.data)], { type: att.mimeType });
 }

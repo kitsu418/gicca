@@ -9,7 +9,10 @@ export default function AddCard() {
   async function handleSubmit(v: SubmittedCard) {
     const card = await createCard({
       merchant: v.merchant,
-      secrets: v.secrets,
+      cardNumber: v.cardNumber,
+      pin: v.pin,
+      note: v.note,
+      barcode: v.barcode,
       initialValue: v.initialValue,
       balance: v.balance ?? v.initialValue,
       currency: v.currency,

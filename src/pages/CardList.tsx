@@ -3,7 +3,6 @@ import { Button, Screen } from '../components/ui';
 import { MerchantBadge } from '../components/MerchantBadge';
 import { BackupReminder } from '../components/BackupReminder';
 import { useCards } from '../core/cards';
-import { lockSession } from '../core/vault/session';
 import type { CardRecord } from '../core/types';
 
 export default function CardList() {
@@ -12,25 +11,15 @@ export default function CardList() {
 
   return (
     <Screen>
-      <div className="max-w-md mx-auto p-6 space-y-5">
+      <div className="max-w-md mx-auto p-6 space-y-5 pb-24">
         <header className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Gicca</h1>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate('/backup')} aria-label="Backup">
+            <Button variant="ghost" onClick={() => navigate('/backup')}>
               Backup
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/settings')} aria-label="Settings">
+            <Button variant="ghost" onClick={() => navigate('/settings')}>
               Settings
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                lockSession();
-                navigate('/unlock');
-              }}
-              aria-label="Lock"
-            >
-              Lock
             </Button>
           </div>
         </header>
