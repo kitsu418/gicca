@@ -4,7 +4,7 @@
   "aliases": ["amzn"],
   "color": "#FF9900",
   "category": "retail",
-  "region": ["US", "GB", "DE", "JP", "CA"],
+  "region": ["US"],
   "defaultCurrency": "USD",
   "cardFormat": {
     "cardNumberPattern": "^[A-Z0-9]{14,16}$",

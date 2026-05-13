@@ -4,7 +4,8 @@
   "aliases": ["app store", "itunes"],
   "color": "#000000",
   "category": "service",
-  "region": ["US", "CN", "JP", "GB", "DE"],
+  "region": ["US"],
+  "defaultCurrency": "USD",
   "cardFormat": {
     "cardNumberPattern": "^X[A-Z0-9]{15}$",
     "cardNumberLength": [16],

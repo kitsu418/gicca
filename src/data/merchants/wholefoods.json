@@ -1,8 +1,9 @@
 {
-  "id": "costco",
-  "name": "Costco",
-  "color": "#E32227",
-  "category": "retail",
+  "id": "wholefoods",
+  "name": "Whole Foods Market",
+  "aliases": ["whole foods", "wfm"],
+  "color": "#00674B",
+  "category": "food",
   "region": ["US"],
   "defaultCurrency": "USD",
   "cardFormat": {
@@ -11,7 +12,6 @@
     "barcodeFormat": "CODE128",
     "barcodeFromCardNumber": "direct"
   },
-  "balanceCheckUrl": "https://www.costco.com/CheckBalance",
   "version": 1,
   "source": "builtin"
 }

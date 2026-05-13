@@ -1,17 +1,19 @@
 {
-  "id": "costco",
-  "name": "Costco",
-  "color": "#E32227",
+  "id": "walmart",
+  "name": "Walmart",
+  "aliases": ["wmt"],
+  "color": "#0071DC",
   "category": "retail",
   "region": ["US"],
   "defaultCurrency": "USD",
   "cardFormat": {
     "cardNumberLength": [16],
-    "pinRequired": false,
+    "pinRequired": true,
+    "pinLength": [4],
     "barcodeFormat": "CODE128",
     "barcodeFromCardNumber": "direct"
   },
-  "balanceCheckUrl": "https://www.costco.com/CheckBalance",
+  "balanceCheckUrl": "https://www.walmart.com/cp/gift-cards/96894",
   "version": 1,
   "source": "builtin"
 }

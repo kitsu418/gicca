@@ -1,0 +1,18 @@
+{
+  "id": "nike",
+  "name": "Nike",
+  "color": "#111111",
+  "category": "retail",
+  "region": ["US"],
+  "defaultCurrency": "USD",
+  "cardFormat": {
+    "cardNumberLength": [16, 19],
+    "pinRequired": true,
+    "pinLength": [6, 8],
+    "barcodeFormat": "CODE128",
+    "barcodeFromCardNumber": "direct"
+  },
+  "balanceCheckUrl": "https://www.nike.com/orders/gift-card-lookup",
+  "version": 1,
+  "source": "builtin"
+}

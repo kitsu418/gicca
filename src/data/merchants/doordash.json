@@ -1,0 +1,15 @@
+{
+  "id": "doordash",
+  "name": "DoorDash",
+  "color": "#EB1700",
+  "category": "food",
+  "region": ["US"],
+  "defaultCurrency": "USD",
+  "cardFormat": {
+    "pinRequired": false,
+    "barcodeFormat": "QR"
+  },
+  "balanceCheckUrl": "https://www.doordash.com/gift-cards/",
+  "version": 1,
+  "source": "builtin"
+}

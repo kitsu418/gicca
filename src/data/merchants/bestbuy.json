@@ -1,0 +1,19 @@
+{
+  "id": "bestbuy",
+  "name": "Best Buy",
+  "aliases": ["bby"],
+  "color": "#0046BE",
+  "category": "retail",
+  "region": ["US"],
+  "defaultCurrency": "USD",
+  "cardFormat": {
+    "cardNumberLength": [16, 19],
+    "pinRequired": true,
+    "pinLength": [4, 6, 8],
+    "barcodeFormat": "CODE128",
+    "barcodeFromCardNumber": "direct"
+  },
+  "balanceCheckUrl": "https://www.bestbuy.com/site/gcb/check-balance",
+  "version": 1,
+  "source": "builtin"
+}

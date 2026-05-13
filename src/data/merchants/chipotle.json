@@ -1,19 +1,18 @@
 {
-  "id": "starbucks",
-  "name": "Starbucks",
-  "aliases": ["sbux"],
-  "color": "#006241",
+  "id": "chipotle",
+  "name": "Chipotle",
+  "color": "#A81612",
   "category": "food",
   "region": ["US"],
   "defaultCurrency": "USD",
   "cardFormat": {
-    "cardNumberLength": [16],
+    "cardNumberLength": [19],
     "pinRequired": true,
-    "pinLength": [8],
+    "pinLength": [4],
     "barcodeFormat": "CODE128",
     "barcodeFromCardNumber": "direct"
   },
-  "balanceCheckUrl": "https://www.starbucks.com/account/gift-cards",
+  "balanceCheckUrl": "https://www.chipotle.com/giftcards",
   "version": 1,
   "source": "builtin"
 }

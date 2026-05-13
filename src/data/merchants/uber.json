@@ -1,0 +1,17 @@
+{
+  "id": "uber",
+  "name": "Uber",
+  "aliases": ["uber eats"],
+  "color": "#000000",
+  "category": "transport",
+  "region": ["US"],
+  "defaultCurrency": "USD",
+  "cardFormat": {
+    "cardNumberPattern": "^[A-Z0-9]{12,16}$",
+    "pinRequired": false,
+    "barcodeFormat": "QR"
+  },
+  "balanceCheckUrl": "https://www.uber.com/us/en/gift/",
+  "version": 1,
+  "source": "builtin"
+}

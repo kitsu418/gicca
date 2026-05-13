@@ -1,17 +1,16 @@
 {
-  "id": "costco",
-  "name": "Costco",
-  "color": "#E32227",
+  "id": "cvs",
+  "name": "CVS Pharmacy",
+  "aliases": ["cvs"],
+  "color": "#CC0000",
   "category": "retail",
   "region": ["US"],
   "defaultCurrency": "USD",
   "cardFormat": {
-    "cardNumberLength": [16],
     "pinRequired": false,
     "barcodeFormat": "CODE128",
     "barcodeFromCardNumber": "direct"
   },
-  "balanceCheckUrl": "https://www.costco.com/CheckBalance",
   "version": 1,
   "source": "builtin"
 }

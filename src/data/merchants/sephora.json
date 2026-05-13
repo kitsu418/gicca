@@ -1,17 +1,18 @@
 {
-  "id": "costco",
-  "name": "Costco",
-  "color": "#E32227",
+  "id": "sephora",
+  "name": "Sephora",
+  "color": "#000000",
   "category": "retail",
   "region": ["US"],
   "defaultCurrency": "USD",
   "cardFormat": {
     "cardNumberLength": [16],
-    "pinRequired": false,
+    "pinRequired": true,
+    "pinLength": [8],
     "barcodeFormat": "CODE128",
     "barcodeFromCardNumber": "direct"
   },
-  "balanceCheckUrl": "https://www.costco.com/CheckBalance",
+  "balanceCheckUrl": "https://www.sephora.com/profile/gift-card-balance",
   "version": 1,
   "source": "builtin"
 }

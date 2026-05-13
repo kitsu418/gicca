@@ -1,0 +1,19 @@
+{
+  "id": "homedepot",
+  "name": "The Home Depot",
+  "aliases": ["home depot", "hd"],
+  "color": "#F96302",
+  "category": "retail",
+  "region": ["US"],
+  "defaultCurrency": "USD",
+  "cardFormat": {
+    "cardNumberLength": [19],
+    "pinRequired": true,
+    "pinLength": [4],
+    "barcodeFormat": "CODE128",
+    "barcodeFromCardNumber": "direct"
+  },
+  "balanceCheckUrl": "https://www.homedepot.com/c/gift_card_balance",
+  "version": 1,
+  "source": "builtin"
+}
