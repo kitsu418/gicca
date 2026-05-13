@@ -10,10 +10,11 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "bwip-js": "^4.10.1",
+    "idb": "^8.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.1.0",
-    "idb": "^8.0.0"
+    "react-router-dom": "^7.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Screen } from '../components/ui';
 import { MerchantBadge } from '../components/MerchantBadge';
+import { Barcode } from '../components/Barcode';
 import { deleteCard, getCard, getCardSecrets } from '../core/cards';
-import type { CardRecord, CardSecrets } from '../core/types';
+import { getMerchant } from '../core/merchants';
+import type { BarcodeFormat, CardRecord, CardSecrets } from '../core/types';
 
 export default function CardDetail() {
   const { id = '' } = useParams<{ id: string }>();
@@ -12,6 +14,7 @@ export default function CardDetail() {
   const [secrets, setSecrets] = useState<CardSecrets | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [fullscreenBarcode, setFullscreenBarcode] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +112,21 @@ export default function CardDetail() {
           </div>
         </div>
 
+        {secrets && (() => {
+          const bc = resolveBarcode(card, secrets);
+          if (!bc) return null;
+          return (
+            <button
+              type="button"
+              onClick={() => setFullscreenBarcode(true)}
+              className="block w-full text-left"
+              title="点击放大显示"
+            >
+              <Barcode format={bc.format} value={bc.value} scale={2} />
+            </button>
+          );
+        })()}
+
         {secrets ? (
           <div className="space-y-3">
             <SecretField
@@ -152,8 +170,53 @@ export default function CardDetail() {
           <InfoRow label="添加" value={new Date(card.createdAt).toLocaleDateString()} />
         </div>
       </div>
+
+      {fullscreenBarcode && secrets && (() => {
+        const bc = resolveBarcode(card, secrets);
+        if (!bc) return null;
+        return <FullscreenBarcode format={bc.format} value={bc.value} onClose={() => setFullscreenBarcode(false)} />;
+      })()}
     </Screen>
   );
+}
+
+/**
+ * Locks the screen to a high-contrast checkout view. Tapping anywhere
+ * dismisses. The white-on-black layout maxes out display contrast for
+ * point-of-sale scanners, which can struggle with dim AMOLED themes.
+ */
+function FullscreenBarcode({
+  format,
+  value,
+  onClose,
+}: {
+  format: BarcodeFormat;
+  value: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 cursor-pointer"
+      onClick={onClose}
+    >
+      <Barcode format={format} value={value} scale={5} className="!bg-white !p-0" />
+      <p className="mt-6 text-slate-700 font-mono tabular-nums text-lg break-all">
+        {value}
+      </p>
+      <p className="mt-3 text-slate-500 text-xs">点击任意位置关闭</p>
+    </div>
+  );
+}
+
+function resolveBarcode(
+  card: CardRecord,
+  secrets: CardSecrets,
+): { format: BarcodeFormat; value: string } | null {
+  if (secrets.barcode) return secrets.barcode;
+  const merchant = getMerchant(card.merchantId);
+  const fmt = merchant?.cardFormat?.barcodeFormat;
+  if (!fmt) return null;
+  return { format: fmt, value: secrets.cardNumber };
 }
 
 function SecretField({
