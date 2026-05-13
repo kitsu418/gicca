@@ -129,6 +129,7 @@ export async function downloadBackup(): Promise<void> {
       const file = new File([blob], filename, { type: 'application/json' });
       if (shareNav.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: filename });
+        await meta.set('lastBackupAt', new Date().toISOString());
         return;
       }
     } catch {
@@ -144,6 +145,7 @@ export async function downloadBackup(): Promise<void> {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  await meta.set('lastBackupAt', new Date().toISOString());
 }
 
 // ─── Import ───────────────────────────────────────────────────────────────

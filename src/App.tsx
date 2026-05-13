@@ -14,11 +14,19 @@ import { useVaultSession } from './hooks/useVaultSession';
 import { refreshVaultStatus, useVaultStatus } from './hooks/useVaultStatus';
 import { useAutoLock } from './hooks/useAutoLock';
 import { wipeAll } from './core/db';
+import { requestPersistentStorage } from './core/storage';
 
 export default function App() {
   const status = useVaultStatus();
   const session = useVaultSession();
   useAutoLock();
+
+  // Ask the browser to make our IndexedDB persistent so it isn't evicted
+  // under storage pressure. Fires once per boot, idempotent, silent on
+  // denial. See core/storage.ts for the rationale.
+  useEffect(() => {
+    void requestPersistentStorage();
+  }, []);
 
   // If a previous setup was interrupted before the user could acknowledge
   // the recovery code, scrap the half-built vault so the user lands cleanly

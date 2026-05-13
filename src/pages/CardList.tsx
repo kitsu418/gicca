@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Screen } from '../components/ui';
 import { MerchantBadge } from '../components/MerchantBadge';
+import { BackupReminder } from '../components/BackupReminder';
 import { useCards } from '../core/cards';
 import { lockSession } from '../core/vault/session';
 import type { CardRecord } from '../core/types';
@@ -33,6 +34,8 @@ export default function CardList() {
             </Button>
           </div>
         </header>
+
+        <BackupReminder hasCards={cards.length > 0} />
 
         {cards.length === 0 ? (
           <EmptyState />
