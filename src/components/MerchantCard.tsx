@@ -1,19 +1,10 @@
 // Skeuomorphic gift-card tile.
 //
-// Renders a credit-card-aspect panel in the brand color, with the real
-// simple-icons logo when we have one and the merchant's uppercase
-// wordmark otherwise. Used on the list (as the row content) and on the
-// detail page (as the hero).
-//
-// Visual ingredients:
-//   - solid brand color base
-//   - 135° diagonal sheen overlay (light → dark)
-//   - 1px white top hairline for an embossed edge
-//   - drop shadow on the outer wrapper for stack depth
+// Renders a credit-card-aspect panel in the brand color with the
+// merchant's uppercase name as the wordmark on top-left. Used on the
+// list (as the row content) and on the detail page (as the hero).
 
 import type { CardRecord } from '../core/types';
-import { getMerchantLogo } from '../data/merchantLogos';
-import { isRenderableLogo } from '../core/merchantLogoInput';
 
 type Props = {
   card: CardRecord;
@@ -21,11 +12,7 @@ type Props = {
 };
 
 export function MerchantCard({ card, className = '' }: Props) {
-  const builtinLogo = getMerchantLogo(card.merchantId);
-  const userLogo = isRenderableLogo(card.merchantSnapshot.logo)
-    ? card.merchantSnapshot.logo
-    : undefined;
-  const bg = card.merchantSnapshot.color || builtinLogo?.hex || '#475569';
+  const bg = card.merchantSnapshot.color ?? '#475569';
   const balanceText = card.balance != null ? formatMoney(card.balance, card.currency) : null;
   const faceValueText =
     card.initialValue != null ? formatMoney(card.initialValue, card.currency) : null;
@@ -51,25 +38,9 @@ export function MerchantCard({ card, className = '' }: Props) {
 
       <div className="relative h-full p-5 flex flex-col justify-between">
         <div className="flex items-start justify-between gap-3">
-          {userLogo ? (
-            <img
-              src={userLogo}
-              alt=""
-              className="h-10 w-10 object-contain drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]"
-              aria-hidden="true"
-            />
-          ) : builtinLogo ? (
-            <svg
-              viewBox="0 0 24 24"
-              className="h-10 w-10 fill-current text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]"
-              aria-hidden="true"
-              dangerouslySetInnerHTML={{ __html: builtinLogo.svg }}
-            />
-          ) : (
-            <span className="text-xl font-extrabold uppercase tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] truncate max-w-[60%]">
-              {card.merchantSnapshot.name}
-            </span>
-          )}
+          <span className="text-xl font-extrabold uppercase tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] truncate max-w-[60%]">
+            {card.merchantSnapshot.name}
+          </span>
           {(balanceText || faceValueText) && (
             <div className="text-right shrink-0">
               <div className="text-[10px] text-white/70 uppercase tracking-widest">
@@ -89,13 +60,8 @@ export function MerchantCard({ card, className = '' }: Props) {
 
         <div className="flex items-end justify-between gap-3 text-xs">
           <div className="min-w-0">
-            {(userLogo || builtinLogo) && (
-              <div className="font-medium uppercase tracking-wide text-white/90 truncate">
-                {card.merchantSnapshot.name}
-              </div>
-            )}
             {card.status !== 'active' && (
-              <div className="text-white/75 mt-0.5">{statusLabel(card.status)}</div>
+              <div className="text-white/75">{statusLabel(card.status)}</div>
             )}
           </div>
           {card.expiresAt && <ExpiryBadge date={card.expiresAt} />}
@@ -136,8 +102,6 @@ function statusLabel(status: CardRecord['status']): string {
     active: 'Active',
     used_up: 'Used up',
     expired: 'Expired',
-    lost: 'Lost',
-    disabled: 'Disabled',
   }[status];
 }
 

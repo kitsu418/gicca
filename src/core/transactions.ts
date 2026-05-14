@@ -6,8 +6,6 @@ import type { CardRecord, Transaction } from './types';
 export type TxInput = {
   amount: number; // cents — negative spend, positive top-up
   date?: string;
-  location?: string;
-  note?: string;
 };
 
 export async function addTransaction(cardId: string, input: TxInput): Promise<Transaction> {
@@ -20,8 +18,6 @@ export async function addTransaction(cardId: string, input: TxInput): Promise<Tr
     cardId,
     date: input.date ?? now,
     amount: Math.round(input.amount),
-    location: input.location || undefined,
-    note: input.note || undefined,
     createdAt: now,
   };
   await txStore.put(tx);

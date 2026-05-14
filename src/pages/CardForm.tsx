@@ -170,11 +170,8 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         />
       )}
 
-      <fieldset className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
-        <legend className="px-2 text-sm font-medium text-slate-200">Codes</legend>
-        <p className="text-xs text-slate-500">
-          A card can carry a 1D barcode, a QR code, or both. Leave blank if not applicable.
-        </p>
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+        <h3 className="text-sm font-medium text-slate-200">Codes</h3>
         <CodeField
           label="Barcode (1D)"
           value={values.barcode}
@@ -189,7 +186,7 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
           onScan={() => setScanTarget('qrcode')}
           suggested={merchantHints?.codeType === 'qrcode'}
         />
-      </fieldset>
+      </div>
 
       {scanTarget && (
         <BarcodeScanner

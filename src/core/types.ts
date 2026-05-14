@@ -7,7 +7,7 @@
 //   transactions  — usage history rows
 //   meta          — key-value app state
 
-export type CardStatus = 'active' | 'used_up' | 'expired' | 'lost' | 'disabled';
+export type CardStatus = 'active' | 'used_up' | 'expired';
 export type CardFormat = 'physical' | 'digital' | 'app';
 export type CardSource = 'self' | 'gift' | 'promo' | 'refund' | 'other';
 
@@ -29,7 +29,6 @@ export type MerchantCategory =
 export type MerchantSnapshot = {
   name: string;
   color?: string;
-  logo?: string;
 };
 
 export type CardRecord = {
@@ -80,8 +79,6 @@ export type Transaction = {
   cardId: string;
   date: string;
   amount: number;
-  location?: string;
-  note?: string;
   createdAt: string;
 };
 
@@ -108,7 +105,6 @@ export type MerchantDefinition = {
   id: string;
   name: string;
   aliases?: string[];
-  logo?: string;
   color?: string;
   category: MerchantCategory;
   region?: string[];

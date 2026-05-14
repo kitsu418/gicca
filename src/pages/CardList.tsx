@@ -13,8 +13,6 @@ const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
   { value: 'active', label: 'Active' },
   { value: 'used_up', label: 'Used up' },
   { value: 'expired', label: 'Expired' },
-  { value: 'lost', label: 'Lost' },
-  { value: 'disabled', label: 'Disabled' },
 ];
 
 type Sort =

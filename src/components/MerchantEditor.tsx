@@ -1,4 +1,4 @@
-// Modal editor for a merchant's display fields (name, color, logo).
+// Modal editor for a merchant's display fields (name + color).
 //
 // Reused by Settings for:
 //   - customizing a builtin (saves a user merchant with the same id;
@@ -7,11 +7,9 @@
 //   - resetting a customized builtin back to the shipped defaults
 //     (deletes the user override so the builtin shines through)
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Button, Input } from './ui';
-import { MerchantBadge } from './MerchantBadge';
 import { deleteUserMerchant, saveUserMerchant } from '../core/merchants';
-import { fileToDataUrl, normalizeLogoInput } from '../core/merchantLogoInput';
 import type { MerchantDefinition } from '../core/types';
 
 type Props = {
@@ -25,37 +23,15 @@ type Props = {
 export function MerchantEditor({ merchant, builtinExists, onClose }: Props) {
   const [name, setName] = useState(merchant.name);
   const [color, setColor] = useState(merchant.color ?? '#0ea5e9');
-  const [logo, setLogo] = useState(merchant.logo ?? '');
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const fileRef = useRef<HTMLInputElement | null>(null);
-
-  async function handleFile(file: File) {
-    setError(null);
-    try {
-      setLogo(await fileToDataUrl(file));
-    } catch {
-      setError('Could not read file');
-    }
-  }
 
   async function handleSave() {
-    setError(null);
-    let normalizedLogo: string | null = null;
-    if (logo) {
-      normalizedLogo = normalizeLogoInput(logo);
-      if (!normalizedLogo) {
-        setError('Logo input not recognized (need SVG, image URL, or data URL)');
-        return;
-      }
-    }
     setBusy(true);
     try {
       await saveUserMerchant({
         ...merchant,
         name: name.trim() || merchant.name,
         color,
-        logo: normalizedLogo ?? undefined,
         source: 'user',
       });
       onClose();
@@ -86,12 +62,6 @@ export function MerchantEditor({ merchant, builtinExists, onClose }: Props) {
     }
   }
 
-  const previewSrc = logo
-    ? logo.startsWith('<') ? (normalizeLogoInput(logo) ?? '') : logo
-    : '';
-
-  // A merchant we can offer "Reset to built-in" on must (a) actually have a
-  // built-in upstream, and (b) currently be a user record overriding it.
   const canReset = builtinExists && merchant.source === 'user';
 
   return (
@@ -104,14 +74,10 @@ export function MerchantEditor({ merchant, builtinExists, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3">
-          <MerchantBadge
-            merchant={{
-              id: merchant.id,
-              name: name || merchant.name,
-              color,
-              logo: previewSrc || undefined,
-            }}
-            size={44}
+          <span
+            className="h-2.5 w-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: color }}
+            aria-hidden="true"
           />
           <div className="min-w-0">
             <h2 className="font-medium truncate">{merchant.name}</h2>
@@ -134,50 +100,6 @@ export function MerchantEditor({ merchant, builtinExists, onClose }: Props) {
           />
           <span className="font-mono text-xs text-slate-500">{color.toUpperCase()}</span>
         </label>
-
-        <div className="space-y-1.5">
-          <span className="block text-sm font-medium text-slate-200">Logo</span>
-          <textarea
-            value={logo}
-            onChange={(e) => {
-              setLogo(e.target.value);
-              setError(null);
-            }}
-            rows={3}
-            placeholder="Paste SVG, image URL, or data URL — leave blank to use the default glyph"
-            spellCheck={false}
-            className="block w-full rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 font-mono"
-          />
-          <div className="flex items-center gap-3">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleFile(f);
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="text-xs text-sky-400 hover:text-sky-300"
-            >
-              Upload an image
-            </button>
-            {logo && (
-              <button
-                type="button"
-                onClick={() => setLogo('')}
-                className="text-xs text-slate-500 hover:text-slate-300 ml-auto"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          {error && <p className="text-xs text-rose-400">{error}</p>}
-        </div>
 
         <div className="flex flex-wrap gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>

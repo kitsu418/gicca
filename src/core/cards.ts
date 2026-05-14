@@ -66,7 +66,6 @@ export async function createCard(input: CardInput): Promise<CardRecord> {
     merchantSnapshot: {
       name: input.merchant.name,
       color: input.merchant.color,
-      logo: input.merchant.logo,
     },
     cardNumber: input.cardNumber,
     pin: input.pin,
@@ -111,7 +110,6 @@ export async function updateCard(
       merchantSnapshot: {
         name: patch.merchant.name,
         color: patch.merchant.color,
-        logo: patch.merchant.logo,
       },
     }),
     cardNumber: patch.cardNumber ?? existing.cardNumber,

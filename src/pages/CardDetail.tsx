@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Screen } from '../components/ui';
+import { Screen } from '../components/ui';
 import { MerchantCard } from '../components/MerchantCard';
 import { Barcode } from '../components/Barcode';
 import { AttachmentGallery } from '../components/AttachmentGallery';
@@ -14,7 +14,6 @@ export default function CardDetail() {
   const navigate = useNavigate();
   const [card, setCard] = useState<CardRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState(false);
   const [fullscreen, setFullscreen] = useState<{ kind: CodeKind; value: string } | null>(null);
 
   useEffect(() => {
@@ -116,27 +115,14 @@ export default function CardDetail() {
         )}
 
         <div className="space-y-3">
-          <SecretField
+          <ValueField
             label="Card number"
             value={card.cardNumber}
-            revealed={revealed}
             onCopy={() => copy(card.cardNumber)}
           />
           {card.pin && (
-            <SecretField
-              label="PIN"
-              value={card.pin}
-              revealed={revealed}
-              onCopy={() => copy(card.pin!)}
-            />
+            <ValueField label="PIN" value={card.pin} onCopy={() => copy(card.pin!)} />
           )}
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => setRevealed((r) => !r)}
-          >
-            {revealed ? 'Hide values' : 'Reveal values'}
-          </Button>
           {card.note && (
             <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
               <div className="text-xs text-slate-500 mb-1">Notes</div>
@@ -214,28 +200,20 @@ function resolveCodes(card: CardRecord): { kind: CodeKind; value: string }[] {
   return out;
 }
 
-function SecretField({
+function ValueField({
   label,
   value,
-  revealed,
   onCopy,
 }: {
   label: string;
   value: string;
-  revealed: boolean;
   onCopy: () => void;
 }) {
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
       <div className="text-xs text-slate-500 mb-1">{label}</div>
       <div className="flex items-center justify-between gap-3">
-        <span
-          className={`font-mono tabular-nums break-all ${
-            revealed ? 'text-slate-100' : 'text-slate-500 tracking-widest'
-          }`}
-        >
-          {revealed ? value : '••••' + (value.length > 4 ? ' •••• •••• ' + value.slice(-4) : '')}
-        </span>
+        <span className="font-mono tabular-nums break-all text-slate-100">{value}</span>
         <button
           onClick={onCopy}
           className="shrink-0 text-xs text-sky-400 hover:text-sky-300"
