@@ -46,7 +46,6 @@ export type CardInput = {
   initialValue?: number;
   balance?: number;
   purchasePrice?: number;
-  currency?: string;
   acquiredAt?: string;
   activatedAt?: string;
   expiresAt?: string;
@@ -76,7 +75,6 @@ export async function createCard(input: CardInput): Promise<CardRecord> {
     initialValue: input.initialValue,
     balance: input.balance,
     purchasePrice: input.purchasePrice,
-    currency: input.currency ?? input.merchant.defaultCurrency,
     acquiredAt: input.acquiredAt,
     activatedAt: input.activatedAt,
     expiresAt: input.expiresAt,
@@ -121,7 +119,6 @@ export async function updateCard(
     initialValue: patch.initialValue ?? existing.initialValue,
     balance: patch.balance ?? existing.balance,
     purchasePrice: patch.purchasePrice ?? existing.purchasePrice,
-    currency: patch.currency ?? existing.currency,
     acquiredAt: patch.acquiredAt ?? existing.acquiredAt,
     activatedAt: patch.activatedAt ?? existing.activatedAt,
     expiresAt: patch.expiresAt ?? existing.expiresAt,

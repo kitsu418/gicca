@@ -30,7 +30,6 @@ export function AddCardSheet({ onCreated, onClose }: Props) {
       qrcode: v.qrcode,
       initialValue: v.initialValue,
       balance: v.balance ?? v.initialValue,
-      currency: v.currency,
       expiresAt: v.expiresAt,
     });
     onCreated(card);

@@ -46,11 +46,10 @@ export type CardRecord = {
   qrcode?: string;
   note?: string;
 
-  // Value (in minor units, e.g. cents)
+  // Value (in minor units, e.g. cents). US-only — every amount is USD.
   initialValue?: number;
   balance?: number;
   purchasePrice?: number;
-  currency?: string;
 
   // Dates (ISO strings)
   acquiredAt?: string;
@@ -108,7 +107,6 @@ export type MerchantDefinition = {
   color?: string;
   category: MerchantCategory;
   region?: string[];
-  defaultCurrency?: string;
   cardFormat?: {
     cardNumberPattern?: string;
     cardNumberLength?: number[];

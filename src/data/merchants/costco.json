@@ -4,7 +4,6 @@
   "color": "#E32227",
   "category": "retail",
   "region": ["US"],
-  "defaultCurrency": "USD",
   "cardFormat": {
     "cardNumberLength": [16],
     "pinRequired": false,

@@ -59,16 +59,11 @@ export function CardDetailBody({ card, onRefresh }: Props) {
       </div>
 
       <div className="space-y-2 text-sm text-slate-400">
-        {card.currency && <InfoRow label="Currency" value={card.currency} />}
         {card.expiresAt && <InfoRow label="Expires" value={new Date(card.expiresAt).toLocaleDateString()} />}
         <InfoRow label="Added" value={new Date(card.createdAt).toLocaleDateString()} />
       </div>
 
-      <TransactionsPanel
-        cardId={card.id}
-        currency={card.currency}
-        onAfterChange={onRefresh}
-      />
+      <TransactionsPanel cardId={card.id} onAfterChange={onRefresh} />
 
       <AttachmentGallery cardId={card.id} />
 

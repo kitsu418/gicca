@@ -40,7 +40,6 @@ export default function EditCard() {
       barcode: v.barcode,
       initialValue: v.initialValue,
       balance: v.balance,
-      currency: v.currency,
       expiresAt: v.expiresAt,
     });
     navigate(`/cards/${id}`, { replace: true });

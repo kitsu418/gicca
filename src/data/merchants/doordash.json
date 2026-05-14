@@ -4,7 +4,6 @@
   "color": "#EB1700",
   "category": "food",
   "region": ["US"],
-  "defaultCurrency": "USD",
   "cardFormat": {
     "pinRequired": false,
     "codeType": "qrcode"

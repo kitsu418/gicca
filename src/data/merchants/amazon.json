@@ -5,7 +5,6 @@
   "color": "#FF9900",
   "category": "retail",
   "region": ["US"],
-  "defaultCurrency": "USD",
   "cardFormat": {
     "cardNumberPattern": "^[A-Z0-9]{14,16}$",
     "pinRequired": false,

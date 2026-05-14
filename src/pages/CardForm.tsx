@@ -15,7 +15,6 @@ export type CardFormValues = {
   note: string;
   initialValue: string;
   balance: string;
-  currency: string;
   expiresAt: string;
   barcode: string;
   qrcode: string;
@@ -28,7 +27,6 @@ const empty: CardFormValues = {
   note: '',
   initialValue: '',
   balance: '',
-  currency: '',
   expiresAt: '',
   barcode: '',
   qrcode: '',
@@ -43,7 +41,6 @@ export type SubmittedCard = {
   qrcode?: string;
   initialValue?: number;
   balance?: number;
-  currency?: string;
   expiresAt?: string;
 };
 
@@ -77,7 +74,6 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
       note: initial.note ?? '',
       initialValue: initial.initialValue != null ? (initial.initialValue / 100).toString() : '',
       balance: initial.balance != null ? (initial.balance / 100).toString() : '',
-      currency: initial.currency ?? '',
       expiresAt: isoToExpiry(initial.expiresAt),
       barcode: initial.barcode ?? '',
       qrcode: initial.qrcode ?? '',
@@ -94,11 +90,7 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
   }
 
   function pickMerchant(m: MerchantDefinition) {
-    setValues((v) => ({
-      ...v,
-      merchant: m,
-      currency: v.currency || m.defaultCurrency || '',
-    }));
+    setValues((v) => ({ ...v, merchant: m }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -129,7 +121,6 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         qrcode: values.qrcode.trim() || undefined,
         initialValue: parseMoney(values.initialValue),
         balance: parseMoney(values.balance),
-        currency: values.currency.trim() || values.merchant.defaultCurrency || undefined,
         expiresAt: expiresIso,
       });
     } catch (e) {
@@ -221,23 +212,14 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Input
-          label="Currency"
-          value={values.currency}
-          onChange={(e) => update('currency', e.target.value.toUpperCase())}
-          maxLength={3}
-          placeholder="USD"
-        />
-        <Input
-          label="Expires"
-          inputMode="numeric"
-          value={values.expiresAt}
-          onChange={(e) => update('expiresAt', formatExpiryInput(e.target.value))}
-          placeholder="MM/YYYY"
-          maxLength={7}
-        />
-      </div>
+      <Input
+        label="Expires"
+        inputMode="numeric"
+        value={values.expiresAt}
+        onChange={(e) => update('expiresAt', formatExpiryInput(e.target.value))}
+        placeholder="MM/YYYY"
+        maxLength={7}
+      />
 
       <label htmlFor="note" className="block space-y-1.5">
         <span className="block text-sm font-medium text-slate-200">Notes</span>

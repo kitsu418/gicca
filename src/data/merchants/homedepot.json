@@ -5,7 +5,6 @@
   "color": "#F96302",
   "category": "retail",
   "region": ["US"],
-  "defaultCurrency": "USD",
   "cardFormat": {
     "cardNumberLength": [19],
     "pinRequired": true,

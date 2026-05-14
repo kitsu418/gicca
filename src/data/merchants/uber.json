@@ -5,7 +5,6 @@
   "color": "#000000",
   "category": "transport",
   "region": ["US"],
-  "defaultCurrency": "USD",
   "cardFormat": {
     "cardNumberPattern": "^[A-Z0-9]{12,16}$",
     "pinRequired": false,

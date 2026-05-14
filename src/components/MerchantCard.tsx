@@ -15,9 +15,9 @@ type Props = {
 
 export function MerchantCard({ card, className = '' }: Props) {
   const bg = card.merchantSnapshot.color ?? '#475569';
-  const balanceText = card.balance != null ? formatMoney(card.balance, card.currency) : null;
+  const balanceText = card.balance != null ? formatMoney(card.balance) : null;
   const faceValueText =
-    card.initialValue != null ? formatMoney(card.initialValue, card.currency) : null;
+    card.initialValue != null ? formatMoney(card.initialValue) : null;
   const showFaceAlongside =
     balanceText != null && faceValueText != null && balanceText !== faceValueText;
   const formattedNumber = formatCardNumber(card.cardNumber);
@@ -120,14 +120,14 @@ function statusLabel(status: CardRecord['status']): string {
   }[status];
 }
 
-function formatMoney(cents: number, currency?: string): string {
+function formatMoney(cents: number): string {
   try {
-    return new Intl.NumberFormat(undefined, {
-      style: currency ? 'currency' : 'decimal',
-      currency: currency || undefined,
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
       maximumFractionDigits: 2,
     }).format(cents / 100);
   } catch {
-    return (cents / 100).toFixed(2);
+    return `$${(cents / 100).toFixed(2)}`;
   }
 }

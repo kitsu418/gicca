@@ -11,13 +11,12 @@ import type { Transaction } from '../core/types';
 
 type Props = {
   cardId: string;
-  currency?: string;
   onAfterChange?: () => void;
 };
 
 type Mode = 'list' | 'spend' | 'topup';
 
-export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
+export function TransactionsPanel({ cardId, onAfterChange }: Props) {
   const [items, setItems] = useState<Transaction[]>([]);
   const [mode, setMode] = useState<Mode>('list');
   const [amount, setAmount] = useState('');
@@ -100,7 +99,7 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
             inputMode="decimal"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder={currency ? `Amount in ${currency}` : 'Amount'}
+            placeholder="Amount in USD"
             autoFocus
           />
           {error && <p className="text-xs text-rose-400">{error}</p>}
@@ -129,7 +128,7 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
                 }`}
               >
                 {t.amount < 0 ? '−' : '+'}
-                {formatMoney(Math.abs(t.amount), currency)}
+                {formatMoney(Math.abs(t.amount))}
               </span>
               <span className="text-xs text-slate-500 ml-auto shrink-0">
                 {new Date(t.date).toLocaleDateString()}
@@ -149,14 +148,14 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
   );
 }
 
-function formatMoney(cents: number, currency?: string): string {
+function formatMoney(cents: number): string {
   try {
-    return new Intl.NumberFormat(undefined, {
-      style: currency ? 'currency' : 'decimal',
-      currency: currency || undefined,
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
       maximumFractionDigits: 2,
     }).format(cents / 100);
   } catch {
-    return (cents / 100).toFixed(2);
+    return `$${(cents / 100).toFixed(2)}`;
   }
 }

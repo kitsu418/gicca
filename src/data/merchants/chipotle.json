@@ -4,7 +4,6 @@
   "color": "#A81612",
   "category": "food",
   "region": ["US"],
-  "defaultCurrency": "USD",
   "cardFormat": {
     "cardNumberLength": [19],
     "pinRequired": true,
