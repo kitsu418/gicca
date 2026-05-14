@@ -10,7 +10,7 @@
     "cardNumberPattern": "^X[A-Z0-9]{15}$",
     "cardNumberLength": [16],
     "pinRequired": false,
-    "barcodeFormat": "QR"
+    "codeType": "qrcode"
   },
   "balanceCheckUrl": "https://www.apple.com/shop/gift-cards",
   "version": 1,

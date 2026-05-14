@@ -7,7 +7,7 @@
   "defaultCurrency": "USD",
   "cardFormat": {
     "pinRequired": false,
-    "barcodeFormat": "QR"
+    "codeType": "qrcode"
   },
   "balanceCheckUrl": "https://www.doordash.com/gift-cards/",
   "version": 1,

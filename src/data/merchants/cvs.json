@@ -8,8 +8,7 @@
   "defaultCurrency": "USD",
   "cardFormat": {
     "pinRequired": false,
-    "barcodeFormat": "CODE128",
-    "barcodeFromCardNumber": "direct"
+    "codeType": "barcode"
   },
   "version": 1,
   "source": "builtin"

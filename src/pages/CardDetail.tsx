@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Screen } from '../components/ui';
-import { MerchantBadge } from '../components/MerchantBadge';
+import { MerchantCard } from '../components/MerchantCard';
 import { Barcode } from '../components/Barcode';
 import { AttachmentGallery } from '../components/AttachmentGallery';
 import { TransactionsPanel } from '../components/TransactionsPanel';
 import { deleteCard, getCard } from '../core/cards';
 import { getMerchant } from '../core/merchants';
-import type { BarcodeFormat, CardRecord } from '../core/types';
+import type { CardRecord, CodeKind } from '../core/types';
 
 export default function CardDetail() {
   const { id = '' } = useParams<{ id: string }>();
@@ -15,7 +15,7 @@ export default function CardDetail() {
   const [card, setCard] = useState<CardRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
-  const [fullscreenBarcode, setFullscreenBarcode] = useState(false);
+  const [fullscreen, setFullscreen] = useState<{ kind: CodeKind; value: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +72,7 @@ export default function CardDetail() {
     );
   }
 
-  const barcode = resolveBarcode(card);
+  const codes = resolveCodes(card);
 
   return (
     <Screen>
@@ -97,29 +97,22 @@ export default function CardDetail() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <MerchantBadge merchant={card.merchantSnapshot} size={56} />
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold truncate">
-              {card.merchantSnapshot.name}
-            </h1>
-            {card.balance != null && (
-              <p className="text-slate-300 text-lg tabular-nums">
-                Balance {formatMoney(card.balance, card.currency)}
-              </p>
-            )}
-          </div>
-        </div>
+        <MerchantCard card={card} />
 
-        {barcode && (
-          <button
-            type="button"
-            onClick={() => setFullscreenBarcode(true)}
-            className="block w-full text-left"
-            title="Tap to enlarge"
-          >
-            <Barcode format={barcode.format} value={barcode.value} scale={2} />
-          </button>
+        {codes.length > 0 && (
+          <div className="space-y-3">
+            {codes.map((c) => (
+              <button
+                key={c.kind}
+                type="button"
+                onClick={() => setFullscreen(c)}
+                className="block w-full text-left"
+                title="Tap to enlarge"
+              >
+                <Barcode kind={c.kind} value={c.value} scale={2} />
+              </button>
+            ))}
+          </div>
         )}
 
         <div className="space-y-3">
@@ -153,9 +146,6 @@ export default function CardDetail() {
         </div>
 
         <div className="space-y-2 text-sm text-slate-400">
-          {card.initialValue != null && (
-            <InfoRow label="Face value" value={formatMoney(card.initialValue, card.currency)} />
-          )}
           {card.currency && <InfoRow label="Currency" value={card.currency} />}
           {card.expiresAt && <InfoRow label="Expires" value={new Date(card.expiresAt).toLocaleDateString()} />}
           <InfoRow label="Added" value={new Date(card.createdAt).toLocaleDateString()} />
@@ -173,23 +163,23 @@ export default function CardDetail() {
         <AttachmentGallery cardId={card.id} />
       </div>
 
-      {fullscreenBarcode && barcode && (
-        <FullscreenBarcode
-          format={barcode.format}
-          value={barcode.value}
-          onClose={() => setFullscreenBarcode(false)}
+      {fullscreen && (
+        <FullscreenCode
+          kind={fullscreen.kind}
+          value={fullscreen.value}
+          onClose={() => setFullscreen(null)}
         />
       )}
     </Screen>
   );
 }
 
-function FullscreenBarcode({
-  format,
+function FullscreenCode({
+  kind,
   value,
   onClose,
 }: {
-  format: BarcodeFormat;
+  kind: CodeKind;
   value: string;
   onClose: () => void;
 }) {
@@ -198,7 +188,7 @@ function FullscreenBarcode({
       className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 cursor-pointer"
       onClick={onClose}
     >
-      <Barcode format={format} value={value} scale={5} className="!bg-white !p-0" />
+      <Barcode kind={kind} value={value} scale={5} className="!bg-white !p-0" />
       <p className="mt-6 text-slate-700 font-mono tabular-nums text-lg break-all">
         {value}
       </p>
@@ -207,12 +197,21 @@ function FullscreenBarcode({
   );
 }
 
-function resolveBarcode(card: CardRecord): { format: BarcodeFormat; value: string } | null {
-  if (card.barcode) return card.barcode;
-  const merchant = getMerchant(card.merchantId);
-  const fmt = merchant?.cardFormat?.barcodeFormat;
-  if (!fmt) return null;
-  return { format: fmt, value: card.cardNumber };
+function resolveCodes(card: CardRecord): { kind: CodeKind; value: string }[] {
+  const out: { kind: CodeKind; value: string }[] = [];
+  if (card.barcode) out.push({ kind: 'barcode', value: card.barcode });
+  if (card.qrcode) out.push({ kind: 'qrcode', value: card.qrcode });
+  if (out.length === 0) {
+    // Fall back to the merchant hint + card number when neither code is
+    // explicitly stored — covers legacy cards and the common case where
+    // the card number IS the scannable value.
+    const merchant = getMerchant(card.merchantId);
+    const hint = merchant?.cardFormat?.codeType;
+    if (hint && card.cardNumber) {
+      out.push({ kind: hint, value: card.cardNumber });
+    }
+  }
+  return out;
 }
 
 function SecretField({
@@ -256,16 +255,4 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <span>{value}</span>
     </div>
   );
-}
-
-function formatMoney(cents: number, currency?: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: currency ? 'currency' : 'decimal',
-      currency: currency || undefined,
-      maximumFractionDigits: 2,
-    }).format(cents / 100);
-  } catch {
-    return (cents / 100).toFixed(2);
-  }
 }

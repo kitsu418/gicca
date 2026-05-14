@@ -9,8 +9,7 @@
     "cardNumberLength": [16],
     "pinRequired": true,
     "pinLength": [4, 6],
-    "barcodeFormat": "CODE128",
-    "barcodeFromCardNumber": "direct"
+    "codeType": "barcode"
   },
   "balanceCheckUrl": "https://www.target.com/gift-card-balance",
   "version": 1,

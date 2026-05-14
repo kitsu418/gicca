@@ -4,22 +4,9 @@
 import { useEffect, useState } from 'react';
 import { Button, Input } from '../components/ui';
 import { MerchantPicker } from '../components/MerchantPicker';
-import type { BarcodeFormat, CardRecord, MerchantDefinition } from '../core/types';
+import { BarcodeScanner } from '../components/BarcodeScanner';
+import type { CardRecord, CodeKind, MerchantDefinition } from '../core/types';
 import { getMerchant } from '../core/merchants';
-
-type BarcodeChoice = '' | BarcodeFormat;
-
-const BARCODE_OPTIONS: { value: BarcodeChoice; label: string }[] = [
-  { value: '', label: 'None' },
-  { value: 'CODE128', label: 'Code 128' },
-  { value: 'CODE39', label: 'Code 39' },
-  { value: 'EAN13', label: 'EAN-13' },
-  { value: 'UPCA', label: 'UPC-A' },
-  { value: 'QR', label: 'QR Code' },
-  { value: 'PDF417', label: 'PDF417' },
-  { value: 'AZTEC', label: 'Aztec' },
-  { value: 'DATAMATRIX', label: 'Data Matrix' },
-];
 
 export type CardFormValues = {
   merchant: MerchantDefinition | null;
@@ -30,8 +17,8 @@ export type CardFormValues = {
   balance: string;
   currency: string;
   expiresAt: string;
-  barcodeFormat: BarcodeChoice;
-  barcodeValue: string;
+  barcode: string;
+  qrcode: string;
 };
 
 const empty: CardFormValues = {
@@ -43,8 +30,8 @@ const empty: CardFormValues = {
   balance: '',
   currency: '',
   expiresAt: '',
-  barcodeFormat: '',
-  barcodeValue: '',
+  barcode: '',
+  qrcode: '',
 };
 
 export type SubmittedCard = {
@@ -52,7 +39,8 @@ export type SubmittedCard = {
   cardNumber: string;
   pin?: string;
   note?: string;
-  barcode?: { format: BarcodeFormat; value: string };
+  barcode?: string;
+  qrcode?: string;
   initialValue?: number;
   balance?: number;
   currency?: string;
@@ -70,7 +58,7 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
   const [values, setValues] = useState<CardFormValues>(empty);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [barcodeTouched, setBarcodeTouched] = useState(false);
+  const [scanTarget, setScanTarget] = useState<CodeKind | null>(null);
 
   useEffect(() => {
     if (!initial) return;
@@ -91,19 +79,14 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
       balance: initial.balance != null ? (initial.balance / 100).toString() : '',
       currency: initial.currency ?? '',
       expiresAt: initial.expiresAt?.slice(0, 10) ?? '',
-      barcodeFormat: initial.barcode?.format ?? '',
-      barcodeValue:
-        initial.barcode && initial.barcode.value !== initial.cardNumber
-          ? initial.barcode.value
-          : '',
+      barcode: initial.barcode ?? '',
+      qrcode: initial.qrcode ?? '',
     });
-    setBarcodeTouched(true);
   }, [initial]);
 
   useEffect(() => {
     if (!prefill) return;
     setValues((v) => ({ ...v, ...prefill }));
-    if (prefill.barcodeFormat || prefill.barcodeValue) setBarcodeTouched(true);
   }, [prefill]);
 
   function update<K extends keyof CardFormValues>(key: K, val: CardFormValues[K]) {
@@ -115,7 +98,6 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
       ...v,
       merchant: m,
       currency: v.currency || m.defaultCurrency || '',
-      barcodeFormat: barcodeTouched ? v.barcodeFormat : (m.cardFormat?.barcodeFormat ?? ''),
     }));
   }
 
@@ -132,16 +114,13 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
     }
     setBusy(true);
     try {
-      const cardNumber = values.cardNumber.trim();
-      const barcodeValue = values.barcodeValue.trim() || cardNumber;
       await onSubmit({
         merchant: values.merchant,
-        cardNumber,
+        cardNumber: values.cardNumber.trim(),
         pin: values.pin.trim() || undefined,
         note: values.note.trim() || undefined,
-        barcode: values.barcodeFormat
-          ? { format: values.barcodeFormat, value: barcodeValue }
-          : undefined,
+        barcode: values.barcode.trim() || undefined,
+        qrcode: values.qrcode.trim() || undefined,
         initialValue: parseMoney(values.initialValue),
         balance: parseMoney(values.balance),
         currency: values.currency.trim() || values.merchant.defaultCurrency || undefined,
@@ -155,7 +134,6 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
   }
 
   const merchantHints = values.merchant?.cardFormat;
-  const merchantSuggestsBarcode = Boolean(merchantHints?.barcodeFormat);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -193,46 +171,37 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
       )}
 
       <fieldset className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
-        <legend className="px-2 text-sm font-medium text-slate-200">Barcode</legend>
-        <label className="block space-y-1.5">
-          <span className="block text-xs text-slate-400">
-            Format
-            {merchantSuggestsBarcode && !barcodeTouched && (
-              <span className="ml-2 text-slate-500">
-                (suggested by {values.merchant?.name})
-              </span>
-            )}
-          </span>
-          <select
-            value={values.barcodeFormat}
-            onChange={(e) => {
-              update('barcodeFormat', e.target.value as BarcodeChoice);
-              setBarcodeTouched(true);
-            }}
-            className="block w-full rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-slate-100 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
-          >
-            {BARCODE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {values.barcodeFormat && (
-          <Input
-            label="Barcode value"
-            value={values.barcodeValue}
-            onChange={(e) => {
-              update('barcodeValue', e.target.value);
-              setBarcodeTouched(true);
-            }}
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="Leave blank to use the card number"
-            hint="Some cards have a separate scannable code printed on the back."
-          />
-        )}
+        <legend className="px-2 text-sm font-medium text-slate-200">Codes</legend>
+        <p className="text-xs text-slate-500">
+          A card can carry a 1D barcode, a QR code, or both. Leave blank if not applicable.
+        </p>
+        <CodeField
+          label="Barcode (1D)"
+          value={values.barcode}
+          onChange={(v) => update('barcode', v)}
+          onScan={() => setScanTarget('barcode')}
+          suggested={merchantHints?.codeType === 'barcode'}
+        />
+        <CodeField
+          label="QR code"
+          value={values.qrcode}
+          onChange={(v) => update('qrcode', v)}
+          onScan={() => setScanTarget('qrcode')}
+          suggested={merchantHints?.codeType === 'qrcode'}
+        />
       </fieldset>
+
+      {scanTarget && (
+        <BarcodeScanner
+          onDetected={(value) => {
+            // Anything scanned goes into whichever field opened the scanner;
+            // detected kind is informational only — the user picked the slot.
+            update(scanTarget, value);
+            setScanTarget(null);
+          }}
+          onClose={() => setScanTarget(null)}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <Input
@@ -285,6 +254,47 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         {busy ? 'Saving…' : submitLabel}
       </Button>
     </form>
+  );
+}
+
+function CodeField({
+  label,
+  value,
+  onChange,
+  onScan,
+  suggested,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onScan: () => void;
+  suggested?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline gap-2">
+        <span className="text-xs text-slate-400">{label}</span>
+        {suggested && (
+          <span className="text-[10px] text-sky-400 uppercase tracking-wide">
+            suggested
+          </span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="Type or scan"
+          className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+        />
+        <Button type="button" variant="secondary" onClick={onScan}>
+          Scan
+        </Button>
+      </div>
+    </div>
   );
 }
 

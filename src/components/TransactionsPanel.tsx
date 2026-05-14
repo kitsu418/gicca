@@ -80,13 +80,21 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-slate-200">Activity</span>
         {mode === 'list' && (
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setMode('spend')}>
+          <div className="flex gap-4 text-sm font-medium">
+            <button
+              type="button"
+              onClick={() => setMode('spend')}
+              className="text-rose-300 hover:text-rose-200"
+            >
               − Spend
-            </Button>
-            <Button variant="ghost" onClick={() => setMode('topup')}>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('topup')}
+              className="text-emerald-300 hover:text-emerald-200"
+            >
               + Top-up
-            </Button>
+            </button>
           </div>
         )}
       </div>

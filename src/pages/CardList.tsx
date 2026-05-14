@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Screen } from '../components/ui';
-import { MerchantBadge } from '../components/MerchantBadge';
+import { MerchantCard } from '../components/MerchantCard';
 import { BackupReminder } from '../components/BackupReminder';
 import { useCards } from '../core/cards';
 import type { CardRecord, CardStatus } from '../core/types';
@@ -48,7 +48,7 @@ export default function CardList() {
 
   return (
     <Screen>
-      <div className="max-w-md mx-auto p-6 space-y-4 pb-24">
+      <div className="max-w-md mx-auto p-6 space-y-5 pb-24">
         <header className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Gicca</h1>
           <div className="flex items-center gap-2">
@@ -79,10 +79,15 @@ export default function CardList() {
         ) : visible.length === 0 ? (
           <NoMatches onClear={() => { setQuery(''); setStatus('all'); }} />
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-4">
             {visible.map((c) => (
               <li key={c.id}>
-                <CardListItem card={c} />
+                <Link
+                  to={`/cards/${c.id}`}
+                  className="block transition-transform active:scale-[0.98] hover:-translate-y-0.5"
+                >
+                  <MerchantCard card={c} />
+                </Link>
               </li>
             ))}
           </ul>
@@ -190,7 +195,6 @@ const sorters: Record<Sort, (a: CardRecord, b: CardRecord) => number> = {
   balance_desc: (a, b) => (b.balance ?? 0) - (a.balance ?? 0),
   balance_asc: (a, b) => (a.balance ?? 0) - (b.balance ?? 0),
   expires_soonest: (a, b) => {
-    // Cards with no expiry sort last; among those with expiry, earliest first.
     const av = a.expiresAt ?? '￿';
     const bv = b.expiresAt ?? '￿';
     return av.localeCompare(bv);
@@ -216,69 +220,4 @@ function NoMatches({ onClear }: { onClear: () => void }) {
       </Button>
     </div>
   );
-}
-
-function CardListItem({ card }: { card: CardRecord }) {
-  return (
-    <Link
-      to={`/cards/${card.id}`}
-      className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 hover:bg-slate-900 px-3 py-3 transition"
-    >
-      <MerchantBadge merchant={card.merchantSnapshot} size={44} />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="font-medium truncate">{card.merchantSnapshot.name}</span>
-          {card.balance != null && (
-            <span className="text-sm font-medium tabular-nums shrink-0">
-              {formatMoney(card.balance, card.currency)}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          {card.status !== 'active' && <StatusPill status={card.status} />}
-          {card.expiresAt && <ExpiryHint date={card.expiresAt} />}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function StatusPill({ status }: { status: CardRecord['status'] }) {
-  const labels: Record<CardRecord['status'], string> = {
-    active: '',
-    used_up: 'Used up',
-    expired: 'Expired',
-    lost: 'Lost',
-    disabled: 'Disabled',
-  };
-  if (!labels[status]) return null;
-  return (
-    <span className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-400">
-      {labels[status]}
-    </span>
-  );
-}
-
-function ExpiryHint({ date }: { date: string }) {
-  const ms = new Date(date).getTime() - Date.now();
-  const days = Math.ceil(ms / (24 * 60 * 60 * 1000));
-  if (days < 0) {
-    return <span className="text-rose-400">Expired {-days}d ago</span>;
-  }
-  if (days <= 30) {
-    return <span className="text-amber-400">Expires in {days}d</span>;
-  }
-  return <span>Expires {new Date(date).toLocaleDateString()}</span>;
-}
-
-function formatMoney(cents: number, currency?: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: currency ? 'currency' : 'decimal',
-      currency: currency || undefined,
-      maximumFractionDigits: 2,
-    }).format(cents / 100);
-  } catch {
-    return (cents / 100).toFixed(2);
-  }
 }

@@ -1,21 +1,23 @@
-// A small color-coded chip used to represent a merchant. Renders the first
-// glyph of the name on a colored background — works without any logo assets
-// and stays crisp at any size.
+// Small color-coded chip used to represent a merchant in dense contexts
+// (picker rows). Renders the brand logo glyph over the brand color when
+// we have one; falls back to the first letter for user merchants.
 
 import type { MerchantSnapshot } from '../core/types';
+import { getMerchantLogo } from '../data/merchantLogos';
 
 type Props = {
-  merchant: Pick<MerchantSnapshot, 'name' | 'color'>;
+  merchant: Pick<MerchantSnapshot, 'name' | 'color'> & { id?: string };
   size?: number;
   className?: string;
 };
 
 export function MerchantBadge({ merchant, size = 40, className = '' }: Props) {
-  const initial = firstGlyph(merchant.name);
-  const bg = merchant.color ?? '#475569';
+  const logo = merchant.id ? getMerchantLogo(merchant.id) : undefined;
+  const bg = merchant.color ?? logo?.hex ?? '#475569';
+
   return (
     <div
-      className={`flex items-center justify-center rounded-xl text-white font-semibold select-none shrink-0 ${className}`}
+      className={`flex items-center justify-center rounded-xl text-white font-semibold select-none shrink-0 overflow-hidden ${className}`}
       style={{
         width: size,
         height: size,
@@ -25,13 +27,21 @@ export function MerchantBadge({ merchant, size = 40, className = '' }: Props) {
       }}
       aria-hidden="true"
     >
-      {initial}
+      {logo ? (
+        <svg
+          viewBox="0 0 24 24"
+          className="fill-current text-white"
+          style={{ width: size * 0.6, height: size * 0.6 }}
+          dangerouslySetInnerHTML={{ __html: logo.svg }}
+        />
+      ) : (
+        firstGlyph(merchant.name)
+      )}
     </div>
   );
 }
 
 function firstGlyph(name: string): string {
-  // Pick first non-whitespace code point so CJK and emojis render correctly.
   for (const ch of name.trim()) return ch;
   return '?';
 }

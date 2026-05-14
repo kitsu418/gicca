@@ -1,17 +1,19 @@
-// Camera-based barcode scanner modal. Lazy-imports @zxing/browser so the
+// Camera-based code scanner modal. Lazy-imports @zxing/browser so the
 // reader (and its ~280 KB dependency graph) only land when the user
 // actually opens the scanner.
 
 import { useEffect, useRef, useState } from 'react';
 import { Button } from './ui';
-import type { BarcodeFormat } from '../core/types';
+import type { CodeKind } from '../core/types';
 
 type ZxingControls = { stop: () => void };
 
 type Props = {
-  onDetected: (value: string, format: BarcodeFormat | null) => void;
+  onDetected: (value: string, kind: CodeKind) => void;
   onClose: () => void;
 };
+
+const QR_FAMILY = new Set(['QR_CODE', 'AZTEC', 'DATA_MATRIX', 'PDF_417', 'MAXICODE']);
 
 export function BarcodeScanner({ onDetected, onClose }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -35,7 +37,10 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
             if (!result) return;
             controls?.stop();
             if (cancelled) return;
-            onDetected(result.getText(), zxingFormatToOurs(result.getBarcodeFormat().toString()));
+            const kind: CodeKind = QR_FAMILY.has(result.getBarcodeFormat().toString())
+              ? 'qrcode'
+              : 'barcode';
+            onDetected(result.getText(), kind);
           },
         )) as ZxingControls;
         setStarting(false);
@@ -58,7 +63,7 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
         <button onClick={onClose} className="text-sm">
           Cancel
         </button>
-        <span className="text-sm text-white/70">Aim at the barcode</span>
+        <span className="text-sm text-white/70">Aim at the code</span>
         <span className="w-12" />
       </header>
 
@@ -74,7 +79,6 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
             <p className="text-white/80 text-sm">Starting camera…</p>
           </div>
         )}
-        {/* Crop guide */}
         {!starting && !error && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-72 max-w-[80%] aspect-[3/2] border-2 border-white/70 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
@@ -101,18 +105,4 @@ function messageFromError(e: unknown): string {
   if (e.name === 'NotReadableError') return 'Camera is in use by another app';
   if (e.name === 'SecurityError') return 'Camera requires an HTTPS connection';
   return e.message || 'Could not access the camera';
-}
-
-function zxingFormatToOurs(fmt: string): BarcodeFormat | null {
-  const map: Record<string, BarcodeFormat> = {
-    CODE_128: 'CODE128',
-    CODE_39: 'CODE39',
-    EAN_13: 'EAN13',
-    UPC_A: 'UPCA',
-    QR_CODE: 'QR',
-    PDF_417: 'PDF417',
-    AZTEC: 'AZTEC',
-    DATA_MATRIX: 'DATAMATRIX',
-  };
-  return map[fmt] ?? null;
 }

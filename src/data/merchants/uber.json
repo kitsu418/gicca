@@ -9,7 +9,7 @@
   "cardFormat": {
     "cardNumberPattern": "^[A-Z0-9]{12,16}$",
     "pinRequired": false,
-    "barcodeFormat": "QR"
+    "codeType": "qrcode"
   },
   "balanceCheckUrl": "https://www.uber.com/us/en/gift/",
   "version": 1,

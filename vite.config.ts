@@ -27,7 +27,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{css,html,svg,png,ico,woff2}', '**/index-*.js', '**/JsBarcode-*.js', '**/browser-*.js', '**/_commonjsHelpers-*.js', '**/workbox-window*.js'],
+        globPatterns: ['**/*.{css,html,svg,png,ico,woff2,js}'],
         // The scanner chunk (@zxing/browser) is large and only needed when the
         // user opens the barcode scanner. Keep it out of the precache and let
         // the SW grab it on first use, then cache it for subsequent offline use.
@@ -37,6 +37,7 @@ export default defineConfig({
         // the @font-face unicode-range — precaching the other six wastes ~180 KB.
         globIgnores: [
           '**/scanner-*.js',
+          '**/ocr-*.js',
           '**/inter-cyrillic*.woff2',
           '**/inter-greek*.woff2',
           '**/inter-vietnamese*.woff2',
@@ -51,6 +52,26 @@ export default defineConfig({
               expiration: { maxEntries: 4 },
             },
           },
+          {
+            urlPattern: /\/assets\/ocr-.*\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gicca-ocr',
+              expiration: { maxEntries: 4 },
+            },
+          },
+          // Tesseract.js fetches worker, wasm, and the eng language model
+          // from a CDN on first use. Tesseract caches them in IndexedDB
+          // itself, but we also let the SW serve the worker.min.js from
+          // its own cache so subsequent loads don't hit the network.
+          {
+            urlPattern: /tesseract/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gicca-tesseract-assets',
+              expiration: { maxEntries: 8 },
+            },
+          },
         ],
       },
     }),
@@ -60,6 +81,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('@zxing')) return 'scanner';
+          if (id.includes('tesseract.js')) return 'ocr';
         },
       },
     },

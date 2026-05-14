@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 import { cards as cardsStore } from './db';
-import type { BarcodeFormat, CardRecord, MerchantDefinition } from './types';
+import type { CardRecord, MerchantDefinition } from './types';
 
 // ─── In-memory cache + pub/sub ────────────────────────────────────────────
 
@@ -40,7 +40,8 @@ export type CardInput = {
   cardNumber: string;
   pin?: string;
   activationCode?: string;
-  barcode?: { format: BarcodeFormat; value: string };
+  barcode?: string;
+  qrcode?: string;
   note?: string;
   initialValue?: number;
   balance?: number;
@@ -71,6 +72,7 @@ export async function createCard(input: CardInput): Promise<CardRecord> {
     pin: input.pin,
     activationCode: input.activationCode,
     barcode: input.barcode,
+    qrcode: input.qrcode,
     note: input.note,
     initialValue: input.initialValue,
     balance: input.balance,
@@ -115,7 +117,8 @@ export async function updateCard(
     cardNumber: patch.cardNumber ?? existing.cardNumber,
     pin: patch.pin ?? existing.pin,
     activationCode: patch.activationCode ?? existing.activationCode,
-    barcode: patch.barcode ?? existing.barcode,
+    barcode: patch.barcode !== undefined ? patch.barcode || undefined : existing.barcode,
+    qrcode: patch.qrcode !== undefined ? patch.qrcode || undefined : existing.qrcode,
     note: patch.note ?? existing.note,
     initialValue: patch.initialValue ?? existing.initialValue,
     balance: patch.balance ?? existing.balance,

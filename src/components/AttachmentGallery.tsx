@@ -1,7 +1,6 @@
 // Attachment thumbnail strip + fullscreen viewer used inside CardDetail.
 
 import { useEffect, useRef, useState } from 'react';
-import { Button } from './ui';
 import {
   addAttachment,
   attachmentBlob,
@@ -67,13 +66,14 @@ export function AttachmentGallery({ cardId }: Props) {
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
-        <Button
-          variant="ghost"
+        <button
+          type="button"
           onClick={() => fileRef.current?.click()}
           disabled={busy}
+          className="text-sm font-medium text-sky-300 hover:text-sky-200 disabled:opacity-50"
         >
           {busy ? 'Processing…' : '+ Add'}
-        </Button>
+        </button>
       </div>
 
       {error && <p className="text-xs text-rose-400">{error}</p>}

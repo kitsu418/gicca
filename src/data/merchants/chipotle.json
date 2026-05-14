@@ -9,8 +9,7 @@
     "cardNumberLength": [19],
     "pinRequired": true,
     "pinLength": [4],
-    "barcodeFormat": "CODE128",
-    "barcodeFromCardNumber": "direct"
+    "codeType": "barcode"
   },
   "balanceCheckUrl": "https://www.chipotle.com/giftcards",
   "version": 1,

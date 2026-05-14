@@ -10,8 +10,7 @@
     "cardNumberLength": [16, 19],
     "pinRequired": true,
     "pinLength": [4, 6, 8],
-    "barcodeFormat": "CODE128",
-    "barcodeFromCardNumber": "direct"
+    "codeType": "barcode"
   },
   "balanceCheckUrl": "https://www.bestbuy.com/site/gcb/check-balance",
   "version": 1,

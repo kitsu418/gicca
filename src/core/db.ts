@@ -8,10 +8,10 @@ import type {
 } from './types';
 
 const DB_NAME = 'gicca';
-// v2 dropped the encryption layer. Records from v1 were stored as
-// AES-GCM envelopes whose DEK is no longer reachable, so the upgrade
-// path simply wipes everything rather than carrying garbage forward.
-const DB_VERSION = 2;
+// v3 splits the previous `barcode: {format, value}` envelope into separate
+// `barcode?` and `qrcode?` string fields. The upgrade callback migrates
+// existing v2 cards in place.
+const DB_VERSION = 3;
 
 interface GiccaSchema extends DBSchema {
   cards: {
@@ -49,9 +49,14 @@ let dbPromise: Promise<IDBPDatabase<GiccaSchema>> | null = null;
 export function getDb(): Promise<IDBPDatabase<GiccaSchema>> {
   if (!dbPromise) {
     dbPromise = openDB<GiccaSchema>(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion) {
-        // Anything from the encrypted era is dead weight — clear it out.
-        if (oldVersion > 0) {
+      async upgrade(db, oldVersion, _newVersion, transaction) {
+        // v0 → v1 → v2 history is irrelevant here. v1 records were
+        // AES-GCM ciphertext (vault era); v2 dropped the encryption
+        // layer and wiped the data. Any vault from that era should
+        // already have been cleared on the previous app load.
+
+        // Fresh install path: just create the v3 schema.
+        if (oldVersion < 2) {
           for (const name of [
             'cards',
             'merchants',
@@ -64,24 +69,51 @@ export function getDb(): Promise<IDBPDatabase<GiccaSchema>> {
               db.deleteObjectStore(name as never);
             }
           }
+
+          const cards = db.createObjectStore('cards', { keyPath: 'id' });
+          cards.createIndex('byMerchant', 'merchantId');
+          cards.createIndex('byStatus', 'status');
+          cards.createIndex('byUpdatedAt', 'updatedAt');
+          cards.createIndex('byExpiresAt', 'expiresAt');
+
+          db.createObjectStore('merchants', { keyPath: 'id' });
+
+          const attachments = db.createObjectStore('attachments', { keyPath: 'id' });
+          attachments.createIndex('byCard', 'cardId');
+
+          const transactions = db.createObjectStore('transactions', { keyPath: 'id' });
+          transactions.createIndex('byCard', 'cardId');
+          transactions.createIndex('byDate', 'date');
+
+          db.createObjectStore('meta', { keyPath: 'key' });
+          return;
         }
 
-        const cards = db.createObjectStore('cards', { keyPath: 'id' });
-        cards.createIndex('byMerchant', 'merchantId');
-        cards.createIndex('byStatus', 'status');
-        cards.createIndex('byUpdatedAt', 'updatedAt');
-        cards.createIndex('byExpiresAt', 'expiresAt');
-
-        db.createObjectStore('merchants', { keyPath: 'id' });
-
-        const attachments = db.createObjectStore('attachments', { keyPath: 'id' });
-        attachments.createIndex('byCard', 'cardId');
-
-        const transactions = db.createObjectStore('transactions', { keyPath: 'id' });
-        transactions.createIndex('byCard', 'cardId');
-        transactions.createIndex('byDate', 'date');
-
-        db.createObjectStore('meta', { keyPath: 'key' });
+        // v2 → v3: split barcode envelope into separate barcode/qrcode strings.
+        if (oldVersion < 3) {
+          const cardsStore = transaction.objectStore('cards');
+          let cursor = await cardsStore.openCursor();
+          while (cursor) {
+            const card = cursor.value as CardRecord & {
+              barcode?: unknown;
+            };
+            const legacy = card.barcode as
+              | { format?: string; value?: string }
+              | string
+              | undefined;
+            if (legacy && typeof legacy === 'object' && 'value' in legacy && legacy.value) {
+              const fmt = (legacy.format ?? '').toUpperCase();
+              const isQr = fmt === 'QR' || fmt === 'AZTEC' || fmt === 'DATAMATRIX' || fmt === 'PDF417';
+              const next: CardRecord = {
+                ...card,
+                barcode: isQr ? undefined : legacy.value,
+                qrcode: isQr ? legacy.value : undefined,
+              };
+              await cursor.update(next);
+            }
+            cursor = await cursor.continue();
+          }
+        }
       },
     });
   }

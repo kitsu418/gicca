@@ -10,8 +10,7 @@
     "cardNumberLength": [19],
     "pinRequired": true,
     "pinLength": [4],
-    "barcodeFormat": "CODE128",
-    "barcodeFromCardNumber": "direct"
+    "codeType": "barcode"
   },
   "balanceCheckUrl": "https://www.homedepot.com/c/gift_card_balance",
   "version": 1,

@@ -11,15 +11,12 @@ export type CardStatus = 'active' | 'used_up' | 'expired' | 'lost' | 'disabled';
 export type CardFormat = 'physical' | 'digital' | 'app';
 export type CardSource = 'self' | 'gift' | 'promo' | 'refund' | 'other';
 
-export type BarcodeFormat =
-  | 'CODE128'
-  | 'CODE39'
-  | 'EAN13'
-  | 'UPCA'
-  | 'QR'
-  | 'PDF417'
-  | 'AZTEC'
-  | 'DATAMATRIX';
+/**
+ * The two user-facing code kinds. We've collapsed every 1D scannable
+ * format into "barcode" (rendered as Code 128) and every 2D matrix
+ * format into "qrcode" — see Barcode.tsx for the render mapping.
+ */
+export type CodeKind = 'barcode' | 'qrcode';
 
 export type MerchantCategory =
   | 'food'
@@ -44,7 +41,10 @@ export type CardRecord = {
   cardNumber: string;
   pin?: string;
   activationCode?: string;
-  barcode?: { format: BarcodeFormat; value: string };
+  /** 1D barcode payload (rendered as Code 128). */
+  barcode?: string;
+  /** QR code payload. */
+  qrcode?: string;
   note?: string;
 
   // Value (in minor units, e.g. cents)
@@ -78,8 +78,8 @@ export type CardRecord = {
 export type Transaction = {
   id: string;
   cardId: string;
-  date: string; // ISO
-  amount: number; // negative = spend, positive = top-up
+  date: string;
+  amount: number;
   location?: string;
   note?: string;
   createdAt: string;
@@ -100,7 +100,7 @@ export type Attachment = {
   mimeType: string;
   width?: number;
   height?: number;
-  data: Uint8Array; // raw compressed image bytes
+  data: Uint8Array;
   createdAt: string;
 };
 
@@ -118,8 +118,8 @@ export type MerchantDefinition = {
     cardNumberLength?: number[];
     pinRequired?: boolean;
     pinLength?: number[];
-    barcodeFormat?: BarcodeFormat;
-    barcodeFromCardNumber?: 'direct' | 'card_pin' | 'custom';
+    /** Which code kind this merchant's cards typically carry. */
+    codeType?: CodeKind;
   };
   balanceCheckUrl?: string;
   customerServicePhone?: string;

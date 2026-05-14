@@ -8,8 +8,7 @@
   "cardFormat": {
     "cardNumberLength": [16],
     "pinRequired": false,
-    "barcodeFormat": "CODE128",
-    "barcodeFromCardNumber": "direct"
+    "codeType": "barcode"
   },
   "balanceCheckUrl": "https://www.costco.com/CheckBalance",
   "version": 1,
