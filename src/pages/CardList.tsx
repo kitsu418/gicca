@@ -38,8 +38,14 @@ const SORT_OPTIONS: { value: Sort; label: string }[] = [
 // Pixel thresholds for the in-stack gestures.
 const SWIPE_LEFT_DISMISS = 80; // px left → trigger delete confirmation
 const SWIPE_UP_OPEN = 50; // px up → open the card
+
 const AXIS_LOCK_DELTA = 10; // px in either direction → commit to an axis
 const DRAG_DOWN_CLOSE = 120; // px down on hero → collapse back to stack
+
+// Once the deal-out flourish has run, later remounts skip it. Without this
+// the entry animation re-runs every time we come back from a sub-view and
+// fights the View Transitions snapshot at handover.
+let walletDealtOnce = false;
 
 export default function CardList() {
   const cards = useCards();
@@ -283,18 +289,27 @@ function WalletStack({
   const OVERLAP_DEALT = -170;
   const OVERLAP_TIGHT = -245;
   const stack = useMemo(() => [...cards].reverse(), [cards]);
-  const [dealtOut, setDealtOut] = useState(false);
+  // Only deal-out on the very first WalletStack mount per session. Subsequent
+  // mounts (e.g. coming back from the Add sheet or an expanded card) skip the
+  // intro flourish — otherwise the live-DOM animation flashes against the
+  // View Transitions snapshot during the post-VT handover.
+  const firstDeal = !walletDealtOnce;
+  const [dealtOut, setDealtOut] = useState(!firstDeal);
 
   useEffect(() => {
+    if (!firstDeal) return;
     let inner = 0;
     const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(() => setDealtOut(true));
+      inner = requestAnimationFrame(() => {
+        setDealtOut(true);
+        walletDealtOnce = true;
+      });
     });
     return () => {
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-  }, []);
+  }, [firstDeal]);
 
   return (
     <ul className="relative pt-2">
@@ -311,6 +326,7 @@ function WalletStack({
           <CardRow
             card={c}
             index={i}
+            firstDeal={firstDeal}
             onOpen={() => onOpen(c.id)}
             onDeleteConfirm={() => onDeleteConfirm(c)}
           />
@@ -329,11 +345,13 @@ function WalletStack({
 function CardRow({
   card,
   index,
+  firstDeal,
   onOpen,
   onDeleteConfirm,
 }: {
   card: CardRecord;
   index: number;
+  firstDeal: boolean;
   onOpen: () => void;
   onDeleteConfirm: () => void;
 }) {
@@ -432,7 +450,9 @@ function CardRow({
         className="block w-full text-left transition-transform duration-200 ease-out hover:-translate-y-1.5 select-none"
         style={
           {
-            animation: `wallet-card-in 0.55s cubic-bezier(0.2,0.85,0.3,1) ${index * 55}ms backwards`,
+            ...(firstDeal && {
+              animation: `wallet-card-in 0.55s cubic-bezier(0.2,0.85,0.3,1) ${index * 55}ms backwards`,
+            }),
             transform: dragTransform,
             transition: dragging
               ? undefined

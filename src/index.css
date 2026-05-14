@@ -62,7 +62,32 @@ body {
 @keyframes gicca-page-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+  }
+}
+
+/* AddCardSheet slides via VT pseudo-elements — using a live-DOM keyframe
+   alongside the View Transition causes a flash at the snapshot handover. */
+::view-transition-old(gicca-add-sheet) {
+  animation: gicca-sheet-down 0.28s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+::view-transition-new(gicca-add-sheet) {
+  animation: gicca-sheet-in 0.34s cubic-bezier(0.2, 0.85, 0.3, 1) forwards;
+}
+
+@keyframes gicca-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes gicca-sheet-down {
+  to {
+    opacity: 0;
+    transform: translateY(40px);
   }
 }
 
