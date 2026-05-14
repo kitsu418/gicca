@@ -51,8 +51,8 @@ export function CardDetailBody({ card, onRefresh }: Props) {
         <ValueField label="Card number" value={card.cardNumber} onCopy={() => copy(card.cardNumber)} />
         {card.pin && <ValueField label="PIN" value={card.pin} onCopy={() => copy(card.pin!)} />}
         {card.note && (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black">
-            <div className="text-xs text-slate-500 mb-1 brutalist:text-white/70 brutalist:uppercase brutalist:tracking-wider">Notes</div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+            <div className="text-xs text-slate-500 mb-1">Notes</div>
             <p className="text-sm whitespace-pre-wrap">{card.note}</p>
           </div>
         )}
@@ -112,13 +112,13 @@ function resolveCodes(card: CardRecord): { kind: CodeKind; value: string }[] {
 
 function ValueField({ label, value, onCopy }: { label: string; value: string; onCopy: () => void }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black">
-      <div className="text-xs text-slate-500 mb-1 brutalist:text-white/70 brutalist:uppercase brutalist:tracking-wider">{label}</div>
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className="text-xs text-slate-500 mb-1">{label}</div>
       <div className="flex items-center justify-between gap-3">
         <span className="font-mono tabular-nums break-all text-slate-100">{value}</span>
         <button
           onClick={onCopy}
-          className="shrink-0 text-xs text-sky-400 hover:text-sky-300 brutalist:text-yellow-300 brutalist:uppercase brutalist:tracking-wider brutalist:hover:text-white"
+          className="shrink-0 text-xs text-sky-400 hover:text-sky-300"
           title="Copy"
         >
           Copy
@@ -130,8 +130,8 @@ function ValueField({ label, value, onCopy }: { label: string; value: string; on
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between brutalist:font-mono">
-      <span className="text-slate-500 brutalist:text-white/70 brutalist:uppercase brutalist:tracking-wider">{label}</span>
+    <div className="flex justify-between">
+      <span className="text-slate-500">{label}</span>
       <span>{value}</span>
     </div>
   );

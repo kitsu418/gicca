@@ -94,7 +94,7 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
       </div>
 
       {mode !== 'list' && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black animate-[gicca-panel-in_0.22s_cubic-bezier(0.2,0.85,0.3,1)_both]">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3 animate-[gicca-panel-in_0.22s_cubic-bezier(0.2,0.85,0.3,1)_both]">
           <Input
             label={mode === 'spend' ? 'Amount spent' : 'Amount added'}
             inputMode="decimal"
@@ -120,9 +120,9 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
           <p className="text-xs text-slate-500">No activity yet</p>
         )
       ) : (
-        <ul className="divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black brutalist:divide-white/30">
+        <ul className="divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden">
           {items.map((t) => (
-            <li key={t.id} className="flex items-center gap-3 pl-4 pr-2 py-2 brutalist:font-mono">
+            <li key={t.id} className="flex items-center gap-3 pl-4 pr-2 py-2">
               <span
                 className={`tabular-nums font-medium ${
                   t.amount < 0 ? 'text-rose-300' : 'text-emerald-300'

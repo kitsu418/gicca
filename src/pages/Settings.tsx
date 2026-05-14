@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Screen } from '../components/ui';
 import { MerchantEditor } from '../components/MerchantEditor';
 import { wipeAll } from '../core/db';
 import { hasBuiltin, useMerchants } from '../core/merchants';
-import { loadTheme, saveTheme } from '../core/theme';
-import type { MerchantDefinition, ThemeName } from '../core/types';
+import type { MerchantDefinition } from '../core/types';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -19,67 +18,12 @@ export default function Settings() {
           <h1 className="text-xl font-semibold">Settings</h1>
         </div>
 
-        <ThemeSection />
         <MerchantsSection />
         <BackupShortcut onNavigate={() => navigate('/backup')} />
         <AboutSection />
         <DangerZone onWiped={() => navigate('/', { replace: true })} />
       </div>
     </Screen>
-  );
-}
-
-function ThemeSection() {
-  const [theme, setThemeState] = useState<ThemeName>('default');
-
-  useEffect(() => {
-    void loadTheme().then(setThemeState);
-  }, []);
-
-  async function pick(next: ThemeName) {
-    setThemeState(next);
-    await saveTheme(next);
-  }
-
-  const options: { value: ThemeName; label: string; description: string }[] = [
-    {
-      value: 'default',
-      label: 'Default',
-      description: 'Dark slate. Cards stack like a wallet and deal out on open.',
-    },
-    {
-      value: 'brutalist',
-      label: 'Brutalist',
-      description: 'Pure black, thick white borders, no rounding, electric-yellow primary.',
-    },
-  ];
-
-  return (
-    <SettingsSection title="Theme" description="Changes apply immediately.">
-      <div className="space-y-2">
-        {options.map((o) => (
-          <label
-            key={o.value}
-            className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900 p-3 cursor-pointer brutalist:rounded-none brutalist:border-white brutalist:border-2 brutalist:bg-black"
-          >
-            <input
-              type="radio"
-              name="theme"
-              value={o.value}
-              checked={theme === o.value}
-              onChange={() => pick(o.value)}
-              className="mt-1 accent-sky-500 brutalist:accent-yellow-300"
-            />
-            <div className="min-w-0">
-              <div className="font-medium">{o.label}</div>
-              <div className="text-xs text-slate-400 brutalist:text-white/70">
-                {o.description}
-              </div>
-            </div>
-          </label>
-        ))}
-      </div>
-    </SettingsSection>
   );
 }
 
@@ -93,22 +37,15 @@ function MerchantsSection() {
   return (
     <SettingsSection
       title="Merchants"
-      description={`${builtinCount} built-in · ${customCount} customized. Tap a merchant to change its logo.`}
+      description={`${builtinCount} built-in · ${customCount} customized. Tap a merchant to change its color or name.`}
     >
       <ul className="space-y-1.5">
         {all.map((m) => {
           const isUser = m.source === 'user';
           const builtinExists = hasBuiltin(m.id);
-          const label = !isUser
-            ? 'Built-in'
-            : builtinExists
-              ? 'Customized'
-              : 'Custom';
+          const label = !isUser ? 'Built-in' : builtinExists ? 'Customized' : 'Custom';
           return (
-            <li
-              key={m.id}
-              className="flex items-center gap-3 rounded-xl bg-slate-900 px-3 py-2"
-            >
+            <li key={m.id} className="flex items-center gap-3 rounded-xl bg-slate-900 px-3 py-2">
               <span
                 className="h-2 w-2 rounded-full shrink-0"
                 style={{ backgroundColor: m.color ?? '#475569' }}
@@ -200,3 +137,4 @@ function SettingsSection({
     </section>
   );
 }
+

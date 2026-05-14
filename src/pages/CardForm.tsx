@@ -170,8 +170,8 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         />
       )}
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black">
-        <h3 className="text-sm font-medium text-slate-200 brutalist:uppercase brutalist:tracking-wider">Codes</h3>
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+        <h3 className="text-sm font-medium text-slate-200">Codes</h3>
         <CodeField
           label="Barcode (1D)"
           value={values.barcode}

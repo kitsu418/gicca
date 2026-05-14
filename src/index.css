@@ -1,8 +1,6 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/inter';
 
-@custom-variant brutalist (&:where([data-theme='brutalist'], [data-theme='brutalist'] *));
-
 @theme {
   --font-sans:
     'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
@@ -21,15 +19,6 @@ body,
 body {
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
-}
-
-/* Brutalist mode global tweaks. */
-html[data-theme='brutalist'] {
-  color-scheme: dark;
-}
-html[data-theme='brutalist'] body {
-  background: #000;
-  color: #fff;
 }
 
 /* Wallet "deal-out" stack animation — used by CardList on mount.

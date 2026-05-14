@@ -8,7 +8,6 @@ import Backup from './pages/Backup';
 import Settings from './pages/Settings';
 import { UpdateBanner } from './components/UpdateBanner';
 import { requestPersistentStorage } from './core/storage';
-import { applyTheme, loadTheme } from './core/theme';
 
 export default function App() {
   // Ask the browser to make our IndexedDB persistent so it isn't evicted
@@ -16,7 +15,6 @@ export default function App() {
   // denial. See core/storage.ts for the rationale.
   useEffect(() => {
     void requestPersistentStorage();
-    void loadTheme().then(applyTheme);
   }, []);
 
   return (

@@ -154,7 +154,7 @@ export default function CardList() {
         <button
           type="button"
           onClick={() => withTransition(() => setAdding(true))}
-          className="fixed bottom-6 right-6 left-6 max-w-md mx-auto inline-flex items-center justify-center rounded-2xl bg-sky-500 hover:bg-sky-400 text-white px-4 py-3 font-medium shadow-lg shadow-sky-500/20 brutalist:rounded-none brutalist:bg-yellow-300 brutalist:text-black brutalist:border-2 brutalist:border-white brutalist:shadow-none brutalist:uppercase brutalist:tracking-wider"
+          className="fixed bottom-6 right-6 left-6 max-w-md mx-auto inline-flex items-center justify-center rounded-2xl bg-sky-500 hover:bg-sky-400 text-white px-4 py-3 font-medium shadow-lg shadow-sky-500/20"
         >
           + Add gift card
         </button>
@@ -414,7 +414,7 @@ function CardRow({
     <div className="relative">
       {/* Delete affordance behind the card, revealed during left-swipe */}
       <div
-        className="absolute inset-0 rounded-2xl bg-rose-600/90 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-rose-600 flex items-center justify-end pr-6 pointer-events-none"
+        className="absolute inset-0 rounded-2xl bg-rose-600/90 flex items-center justify-end pr-6 pointer-events-none"
         style={{ opacity: showDeleteAffordance ? Math.min(1, -dragX / 80) : 0 }}
       >
         <span className="text-white text-sm font-semibold uppercase tracking-wider">
@@ -474,13 +474,13 @@ function Controls({
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Search by merchant or note…"
           disabled={disabled}
-          className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black brutalist:focus:border-yellow-300 brutalist:focus:ring-0 brutalist:placeholder-white/40"
+          className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
         />
         <select
           value={sort}
           onChange={(e) => onSortChange(e.target.value as Sort)}
           disabled={disabled}
-          className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black brutalist:focus:border-yellow-300 brutalist:focus:ring-0"
+          className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
           aria-label="Sort"
         >
           {SORT_OPTIONS.map((o) => (
@@ -496,10 +496,10 @@ function Controls({
             key={c.value}
             onClick={() => onStatusChange(c.value)}
             disabled={disabled}
-            className={`shrink-0 rounded-full px-3 py-1 text-xs border transition brutalist:rounded-none brutalist:border-2 brutalist:transition-none brutalist:uppercase brutalist:tracking-wider ${
+            className={`shrink-0 rounded-full px-3 py-1 text-xs border transition ${
               status === c.value
-                ? 'bg-sky-500 border-sky-400 text-white brutalist:bg-yellow-300 brutalist:text-black brutalist:border-white'
-                : 'border-slate-700 text-slate-300 hover:bg-slate-800 brutalist:border-white brutalist:text-white brutalist:hover:bg-white brutalist:hover:text-black'
+                ? 'bg-sky-500 border-sky-400 text-white'
+                : 'border-slate-700 text-slate-300 hover:bg-slate-800'
             }`}
           >
             {c.label}
