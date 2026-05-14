@@ -41,7 +41,7 @@ export function Input({
 }: InputProps) {
   const inputId = id ?? rest.name;
   return (
-    <label htmlFor={inputId} className="block space-y-1.5">
+    <label htmlFor={inputId} className="block min-w-0 space-y-1.5">
       {label && (
         <span className="block text-sm font-medium text-slate-200">{label}</span>
       )}
