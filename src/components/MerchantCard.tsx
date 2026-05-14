@@ -13,6 +13,7 @@
 
 import type { CardRecord } from '../core/types';
 import { getMerchantLogo } from '../data/merchantLogos';
+import { isRenderableLogo } from '../core/merchantLogoInput';
 
 type Props = {
   card: CardRecord;
@@ -20,8 +21,11 @@ type Props = {
 };
 
 export function MerchantCard({ card, className = '' }: Props) {
-  const logo = getMerchantLogo(card.merchantId);
-  const bg = card.merchantSnapshot.color || logo?.hex || '#475569';
+  const builtinLogo = getMerchantLogo(card.merchantId);
+  const userLogo = isRenderableLogo(card.merchantSnapshot.logo)
+    ? card.merchantSnapshot.logo
+    : undefined;
+  const bg = card.merchantSnapshot.color || builtinLogo?.hex || '#475569';
   const balanceText = card.balance != null ? formatMoney(card.balance, card.currency) : null;
   const faceValueText =
     card.initialValue != null ? formatMoney(card.initialValue, card.currency) : null;
@@ -47,12 +51,19 @@ export function MerchantCard({ card, className = '' }: Props) {
 
       <div className="relative h-full p-5 flex flex-col justify-between">
         <div className="flex items-start justify-between gap-3">
-          {logo ? (
+          {userLogo ? (
+            <img
+              src={userLogo}
+              alt=""
+              className="h-10 w-10 object-contain drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]"
+              aria-hidden="true"
+            />
+          ) : builtinLogo ? (
             <svg
               viewBox="0 0 24 24"
               className="h-10 w-10 fill-current text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]"
               aria-hidden="true"
-              dangerouslySetInnerHTML={{ __html: logo.svg }}
+              dangerouslySetInnerHTML={{ __html: builtinLogo.svg }}
             />
           ) : (
             <span className="text-xl font-extrabold uppercase tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] truncate max-w-[60%]">
@@ -78,7 +89,7 @@ export function MerchantCard({ card, className = '' }: Props) {
 
         <div className="flex items-end justify-between gap-3 text-xs">
           <div className="min-w-0">
-            {logo && (
+            {(userLogo || builtinLogo) && (
               <div className="font-medium uppercase tracking-wide text-white/90 truncate">
                 {card.merchantSnapshot.name}
               </div>

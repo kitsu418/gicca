@@ -1,19 +1,23 @@
 // Small color-coded chip used to represent a merchant in dense contexts
-// (picker rows). Renders the brand logo glyph over the brand color when
-// we have one; falls back to the first letter for user merchants.
+// (picker rows). Render priority:
+//   1. User-supplied logo (merchant.logo / merchantSnapshot.logo)
+//   2. Builtin glyph from the logo registry
+//   3. First-letter fallback
 
 import type { MerchantSnapshot } from '../core/types';
 import { getMerchantLogo } from '../data/merchantLogos';
+import { isRenderableLogo } from '../core/merchantLogoInput';
 
 type Props = {
-  merchant: Pick<MerchantSnapshot, 'name' | 'color'> & { id?: string };
+  merchant: Pick<MerchantSnapshot, 'name' | 'color' | 'logo'> & { id?: string };
   size?: number;
   className?: string;
 };
 
 export function MerchantBadge({ merchant, size = 40, className = '' }: Props) {
-  const logo = merchant.id ? getMerchantLogo(merchant.id) : undefined;
-  const bg = merchant.color ?? logo?.hex ?? '#475569';
+  const builtin = merchant.id ? getMerchantLogo(merchant.id) : undefined;
+  const userLogo = isRenderableLogo(merchant.logo) ? merchant.logo : undefined;
+  const bg = merchant.color ?? builtin?.hex ?? '#475569';
 
   return (
     <div
@@ -27,12 +31,19 @@ export function MerchantBadge({ merchant, size = 40, className = '' }: Props) {
       }}
       aria-hidden="true"
     >
-      {logo ? (
+      {userLogo ? (
+        <img
+          src={userLogo}
+          alt=""
+          className="object-contain"
+          style={{ width: size * 0.7, height: size * 0.7 }}
+        />
+      ) : builtin ? (
         <svg
           viewBox="0 0 24 24"
           className="fill-current text-white"
           style={{ width: size * 0.6, height: size * 0.6 }}
-          dangerouslySetInnerHTML={{ __html: logo.svg }}
+          dangerouslySetInnerHTML={{ __html: builtin.svg }}
         />
       ) : (
         firstGlyph(merchant.name)

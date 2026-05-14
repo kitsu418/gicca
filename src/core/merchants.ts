@@ -63,6 +63,11 @@ export function getMerchant(id: string): MerchantDefinition | undefined {
   return user ?? BUILTIN_BY_ID.get(id);
 }
 
+/** True iff the registry ships a built-in record with this id. */
+export function hasBuiltin(id: string): boolean {
+  return BUILTIN_BY_ID.has(id);
+}
+
 /** Case-insensitive search across name and aliases. Returns up to `limit`. */
 export function searchMerchants(query: string, limit = 50): MerchantDefinition[] {
   const q = query.trim().toLowerCase();

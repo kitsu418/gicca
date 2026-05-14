@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Screen } from '../components/ui';
 import { MerchantBadge } from '../components/MerchantBadge';
+import { MerchantEditor } from '../components/MerchantEditor';
 import { wipeAll } from '../core/db';
-import { deleteUserMerchant, useMerchants } from '../core/merchants';
+import { hasBuiltin, useMerchants } from '../core/merchants';
+import type { MerchantDefinition } from '../core/types';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -27,35 +30,52 @@ export default function Settings() {
 
 function MerchantsSection() {
   const all = useMerchants();
-  const userMerchants = all.filter((m) => m.source === 'user');
+  const [editing, setEditing] = useState<MerchantDefinition | null>(null);
 
-  async function handleDelete(id: string) {
-    if (!window.confirm('Delete this custom merchant? Existing cards keep their merchant-name snapshot.')) return;
-    await deleteUserMerchant(id);
-  }
+  const customCount = all.filter((m) => m.source === 'user').length;
+  const builtinCount = all.length - customCount;
 
   return (
     <SettingsSection
-      title="Custom merchants"
-      description={`${all.length - userMerchants.length} built-in · ${userMerchants.length} custom`}
+      title="Merchants"
+      description={`${builtinCount} built-in · ${customCount} customized. Tap a merchant to change its logo.`}
     >
-      {userMerchants.length === 0 ? (
-        <p className="text-xs text-slate-500">Create new merchants from the picker when adding a card.</p>
-      ) : (
-        <ul className="space-y-2">
-          {userMerchants.map((m) => (
-            <li key={m.id} className="flex items-center gap-3 rounded-xl bg-slate-900 px-3 py-2">
+      <ul className="space-y-1.5">
+        {all.map((m) => {
+          const isUser = m.source === 'user';
+          const builtinExists = hasBuiltin(m.id);
+          const label = !isUser
+            ? 'Built-in'
+            : builtinExists
+              ? 'Customized'
+              : 'Custom';
+          return (
+            <li
+              key={m.id}
+              className="flex items-center gap-3 rounded-xl bg-slate-900 px-3 py-2"
+            >
               <MerchantBadge merchant={m} size={32} />
-              <span className="flex-1 truncate text-sm">{m.name}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm truncate">{m.name}</div>
+                <div className="text-xs text-slate-500">{label}</div>
+              </div>
               <button
-                onClick={() => handleDelete(m.id)}
-                className="text-xs text-rose-400 hover:text-rose-300"
+                onClick={() => setEditing(m)}
+                className="text-xs font-medium text-sky-300 hover:text-sky-200"
               >
-                Delete
+                {isUser ? 'Edit' : 'Customize'}
               </button>
             </li>
-          ))}
-        </ul>
+          );
+        })}
+      </ul>
+
+      {editing && (
+        <MerchantEditor
+          merchant={editing}
+          builtinExists={hasBuiltin(editing.id)}
+          onClose={() => setEditing(null)}
+        />
       )}
     </SettingsSection>
   );
