@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Screen } from '../components/ui';
+import { Button, PassphraseInput, Screen } from '../components/ui';
 import {
   downloadBackup,
   importBackupReplacing,
@@ -82,11 +82,10 @@ export default function Backup() {
               without it.
             </p>
           </div>
-          <Input
-            type="password"
+          <PassphraseInput
             label="Export passphrase"
             value={exportPw}
-            onChange={(e) => setExportPw(e.target.value)}
+            onChange={setExportPw}
             placeholder="At least 8 characters"
             autoComplete="new-password"
           />
@@ -124,11 +123,10 @@ export default function Backup() {
           </Button>
           {pendingFile && (
             <>
-              <Input
-                type="password"
+              <PassphraseInput
                 label="Backup passphrase"
                 value={importPw}
-                onChange={(e) => setImportPw(e.target.value)}
+                onChange={setImportPw}
                 placeholder="The passphrase used to export"
                 autoComplete="off"
               />
