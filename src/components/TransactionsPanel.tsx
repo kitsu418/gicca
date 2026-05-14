@@ -70,22 +70,22 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
   }
 
   return (
-    <div className="space-y-3 newsprint:border-t newsprint:border-[#161310] newsprint:pt-3">
-      <div className="flex items-center justify-between newsprint:border-b newsprint:border-[#161310] newsprint:pb-2">
-        <span className="text-sm font-medium text-slate-200 newsprint:uppercase newsprint:tracking-[0.3em] newsprint:text-[#161310] newsprint:font-mono newsprint:text-[11px]">Activity</span>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-slate-200">Activity</span>
         {mode === 'list' && (
-          <div className="flex gap-4 text-sm font-medium newsprint:gap-6 newsprint:text-[11px] newsprint:uppercase newsprint:tracking-[0.2em] newsprint:font-mono">
+          <div className="flex gap-4 text-sm font-medium">
             <button
               type="button"
               onClick={() => setMode('spend')}
-              className="text-rose-300 hover:text-rose-200 newsprint:text-[#c8202c] newsprint:hover:underline"
+              className="text-rose-300 hover:text-rose-200"
             >
               − Spend
             </button>
             <button
               type="button"
               onClick={() => setMode('topup')}
-              className="text-emerald-300 hover:text-emerald-200 newsprint:text-[#161310] newsprint:hover:underline"
+              className="text-emerald-300 hover:text-emerald-200"
             >
               + Top-up
             </button>
@@ -94,7 +94,7 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
       </div>
 
       {mode !== 'list' && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black newsprint:rounded-none newsprint:border newsprint:border-[#161310] newsprint:bg-transparent">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black">
           <Input
             label={mode === 'spend' ? 'Amount spent' : 'Amount added'}
             inputMode="decimal"
@@ -120,9 +120,9 @@ export function TransactionsPanel({ cardId, currency, onAfterChange }: Props) {
           <p className="text-xs text-slate-500">No activity yet</p>
         )
       ) : (
-        <ul className="divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black brutalist:divide-white/30 newsprint:rounded-none newsprint:border-0 newsprint:bg-transparent newsprint:divide-[#161310]/30 newsprint:overflow-visible">
+        <ul className="divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black brutalist:divide-white/30">
           {items.map((t) => (
-            <li key={t.id} className="flex items-center gap-3 pl-4 pr-2 py-2 brutalist:font-mono newsprint:pl-0 newsprint:pr-0 newsprint:py-1.5 newsprint:font-mono newsprint:text-[12px]">
+            <li key={t.id} className="flex items-center gap-3 pl-4 pr-2 py-2 brutalist:font-mono">
               <span
                 className={`tabular-nums font-medium ${
                   t.amount < 0 ? 'text-rose-300' : 'text-emerald-300'

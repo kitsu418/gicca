@@ -45,17 +45,12 @@ function ThemeSection() {
     {
       value: 'default',
       label: 'Default',
-      description: 'Dark slate, rounded cards with brand-color sheen.',
+      description: 'Dark slate. Cards stack like a wallet and deal out on open.',
     },
     {
       value: 'brutalist',
       label: 'Brutalist',
       description: 'Pure black, thick white borders, no rounding, electric-yellow primary.',
-    },
-    {
-      value: 'newsprint',
-      label: 'Newsprint',
-      description: 'Warm paper, ink hairlines, serif body, vermilion stamp accent.',
     },
   ];
 
@@ -65,7 +60,7 @@ function ThemeSection() {
         {options.map((o) => (
           <label
             key={o.value}
-            className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900 p-3 cursor-pointer brutalist:rounded-none brutalist:border-white brutalist:border-2 brutalist:bg-black newsprint:rounded-none newsprint:border-[#161310] newsprint:bg-transparent"
+            className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900 p-3 cursor-pointer brutalist:rounded-none brutalist:border-white brutalist:border-2 brutalist:bg-black"
           >
             <input
               type="radio"
@@ -73,11 +68,11 @@ function ThemeSection() {
               value={o.value}
               checked={theme === o.value}
               onChange={() => pick(o.value)}
-              className="mt-1 accent-sky-500 brutalist:accent-yellow-300 newsprint:accent-[#c8202c]"
+              className="mt-1 accent-sky-500 brutalist:accent-yellow-300"
             />
             <div className="min-w-0">
               <div className="font-medium">{o.label}</div>
-              <div className="text-xs text-slate-400 brutalist:text-white/70 newsprint:text-[#161310]/70">
+              <div className="text-xs text-slate-400 brutalist:text-white/70">
                 {o.description}
               </div>
             </div>

@@ -210,13 +210,13 @@ function ValueField({
   onCopy: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black newsprint:rounded-none newsprint:border-x-0 newsprint:border-t newsprint:border-b newsprint:border-[#161310] newsprint:bg-transparent newsprint:p-3">
-      <div className="text-xs text-slate-500 mb-1 brutalist:text-white/70 brutalist:uppercase brutalist:tracking-wider newsprint:text-[#161310]/70 newsprint:uppercase newsprint:tracking-[0.2em] newsprint:font-mono newsprint:text-[10px]">{label}</div>
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black">
+      <div className="text-xs text-slate-500 mb-1 brutalist:text-white/70 brutalist:uppercase brutalist:tracking-wider">{label}</div>
       <div className="flex items-center justify-between gap-3">
-        <span className="font-mono tabular-nums break-all text-slate-100 newsprint:text-[#161310]">{value}</span>
+        <span className="font-mono tabular-nums break-all text-slate-100">{value}</span>
         <button
           onClick={onCopy}
-          className="shrink-0 text-xs text-sky-400 hover:text-sky-300 brutalist:text-yellow-300 brutalist:uppercase brutalist:tracking-wider brutalist:hover:text-white newsprint:text-[#c8202c] newsprint:uppercase newsprint:tracking-[0.2em] newsprint:font-mono newsprint:hover:text-[#161310]"
+          className="shrink-0 text-xs text-sky-400 hover:text-sky-300 brutalist:text-yellow-300 brutalist:uppercase brutalist:tracking-wider brutalist:hover:text-white"
           title="Copy"
         >
           Copy
@@ -228,9 +228,9 @@ function ValueField({
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between brutalist:font-mono newsprint:font-mono newsprint:py-1 newsprint:border-b newsprint:border-[#161310]/30 newsprint:last:border-b-0 newsprint:text-[12px]">
-      <span className="text-slate-500 brutalist:text-white/70 brutalist:uppercase brutalist:tracking-wider newsprint:text-[#161310]/60 newsprint:uppercase newsprint:tracking-[0.2em]">{label}</span>
-      <span className="newsprint:text-[#161310]">{value}</span>
+    <div className="flex justify-between brutalist:font-mono">
+      <span className="text-slate-500 brutalist:text-white/70 brutalist:uppercase brutalist:tracking-wider">{label}</span>
+      <span>{value}</span>
     </div>
   );
 }

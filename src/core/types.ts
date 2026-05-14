@@ -123,7 +123,7 @@ export type MerchantDefinition = {
   source: 'builtin' | 'user';
 };
 
-export type ThemeName = 'default' | 'brutalist' | 'newsprint';
+export type ThemeName = 'default' | 'brutalist';
 
 export type MetaKeys = {
   schemaVersion: number;

@@ -2,7 +2,6 @@
 @import '@fontsource-variable/inter';
 
 @custom-variant brutalist (&:where([data-theme='brutalist'], [data-theme='brutalist'] *));
-@custom-variant newsprint (&:where([data-theme='newsprint'], [data-theme='newsprint'] *));
 
 @theme {
   --font-sans:
@@ -11,11 +10,6 @@
   --font-mono:
     ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono',
     monospace;
-  --font-serif:
-    'Charter', 'Source Serif Pro', 'Georgia', ui-serif, serif;
-  --color-paper: #f4f1ea;
-  --color-ink: #161310;
-  --color-vermilion: #c8202c;
 }
 
 html,
@@ -38,14 +32,17 @@ html[data-theme='brutalist'] body {
   color: #fff;
 }
 
-/* Newsprint mode global tweaks — paper background, ink text, serif body.
-   Numbers and merchant card metadata still get mono / sans variants on a
-   per-element basis. */
-html[data-theme='newsprint'] {
-  color-scheme: light;
-}
-html[data-theme='newsprint'] body {
-  background: var(--color-paper);
-  color: var(--color-ink);
-  font-family: var(--font-serif);
+/* Wallet "deal-out" stack animation — used by CardList on mount.
+   Each card transitions its margin-top from a tight overlap to a
+   relaxed peek; the easing is gentle so the stack feels like a hand of
+   cards being splayed rather than mechanical sliding. */
+@keyframes wallet-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
