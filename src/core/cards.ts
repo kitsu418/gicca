@@ -1,8 +1,12 @@
-// Cards service — plaintext, no encryption layer.
+// Cards service. Records are stored as encrypted blobs in the cards
+// object store; this layer encrypts on write and decrypts on read so
+// the rest of the app can keep working with plain CardRecord values.
 
 import { useEffect, useSyncExternalStore } from 'react';
-import { cards as cardsStore } from './db';
+import { decryptJson, encryptJson } from './crypto';
+import { rawCards } from './db';
 import type { CardRecord, MerchantDefinition } from './types';
+import { getKey, subscribe as subscribeVault } from './vault';
 
 // ─── In-memory cache + pub/sub ────────────────────────────────────────────
 
@@ -14,12 +18,35 @@ function notify() {
   for (const fn of subscribers) fn();
 }
 
+async function readDecrypted(id: string): Promise<CardRecord | undefined> {
+  const row = await rawCards.get(id);
+  if (!row) return undefined;
+  return decryptJson<CardRecord>(getKey(), row.blob);
+}
+
+async function writeEncrypted(card: CardRecord): Promise<void> {
+  const blob = await encryptJson(getKey(), card);
+  await rawCards.put({ id: card.id, blob });
+}
+
 async function refresh(): Promise<void> {
-  cache = await cardsStore.list();
+  const rows = await rawCards.list();
+  const decoded = await Promise.all(
+    rows.map((r) => decryptJson<CardRecord>(getKey(), r.blob)),
+  );
+  cache = decoded.filter((c) => !c.deletedAt);
   cache.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   loaded = true;
   notify();
 }
+
+// Whenever the vault toggles state, blow the cache so the next read
+// re-fetches with the (possibly new) key.
+subscribeVault(() => {
+  loaded = false;
+  cache = [];
+  notify();
+});
 
 export async function ensureCardsLoaded(): Promise<void> {
   if (!loaded) await refresh();
@@ -32,7 +59,7 @@ export function listCardsSync(): readonly CardRecord[] {
 }
 
 export async function getCard(id: string): Promise<CardRecord | undefined> {
-  return cardsStore.get(id);
+  return readDecrypted(id);
 }
 
 export type CardInput = {
@@ -89,7 +116,7 @@ export async function createCard(input: CardInput): Promise<CardRecord> {
     createdAt: now,
     updatedAt: now,
   };
-  await cardsStore.put(record);
+  await writeEncrypted(record);
   await refresh();
   return record;
 }
@@ -98,7 +125,7 @@ export async function updateCard(
   id: string,
   patch: Partial<CardInput> & { merchant?: MerchantDefinition },
 ): Promise<CardRecord> {
-  const existing = await cardsStore.get(id);
+  const existing = await readDecrypted(id);
   if (!existing) throw new Error(`card ${id} not found`);
 
   const next: CardRecord = {
@@ -130,13 +157,16 @@ export async function updateCard(
     region: patch.region ?? existing.region,
     updatedAt: new Date().toISOString(),
   };
-  await cardsStore.put(next);
+  await writeEncrypted(next);
   await refresh();
   return next;
 }
 
 export async function deleteCard(id: string): Promise<void> {
-  await cardsStore.softDelete(id);
+  const existing = await readDecrypted(id);
+  if (!existing) return;
+  const now = new Date().toISOString();
+  await writeEncrypted({ ...existing, deletedAt: now, updatedAt: now });
   await refresh();
 }
 

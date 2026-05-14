@@ -1,7 +1,9 @@
-// Photo attachments: client-side compress → raw bytes in IndexedDB.
+// Photo attachments: client-side compress → encrypted bytes in IndexedDB.
 
-import { cards as cardsStore, attachments as attachmentsStore } from './db';
-import type { Attachment, AttachmentKind } from './types';
+import { decryptJson, decryptPacked, encryptJson, encryptPacked } from './crypto';
+import { rawAttachments, rawCards } from './db';
+import type { Attachment, AttachmentKind, CardRecord } from './types';
+import { getKey } from './vault';
 
 const MAX_DIMENSION = 1600;
 const JPEG_QUALITY = 0.85;
@@ -34,12 +36,30 @@ async function compressImage(file: File): Promise<{
   return { bytes, mimeType: blob.type, width, height };
 }
 
+async function readCard(id: string): Promise<CardRecord | undefined> {
+  const row = await rawCards.get(id);
+  if (!row) return undefined;
+  return decryptJson<CardRecord>(getKey(), row.blob);
+}
+
+async function writeCard(card: CardRecord): Promise<void> {
+  await rawCards.put({ id: card.id, blob: await encryptJson(getKey(), card) });
+}
+
+type AttachmentMeta = Omit<Attachment, 'data'>;
+
+async function writeAttachment(attachment: Attachment): Promise<void> {
+  const { data, ...meta } = attachment;
+  const blob = await encryptPacked(getKey(), meta, data);
+  await rawAttachments.put({ id: attachment.id, blob });
+}
+
 export async function addAttachment(
   cardId: string,
   file: File,
   kind: AttachmentKind = 'card_front',
 ): Promise<Attachment> {
-  const card = await cardsStore.get(cardId);
+  const card = await readCard(cardId);
   if (!card) throw new Error(`card ${cardId} not found`);
 
   const compressed = await compressImage(file);
@@ -53,9 +73,9 @@ export async function addAttachment(
     data: compressed.bytes,
     createdAt: new Date().toISOString(),
   };
-  await attachmentsStore.put(attachment);
+  await writeAttachment(attachment);
 
-  await cardsStore.put({
+  await writeCard({
     ...card,
     attachmentIds: [...card.attachmentIds, attachment.id],
     updatedAt: new Date().toISOString(),
@@ -65,10 +85,10 @@ export async function addAttachment(
 }
 
 export async function deleteAttachment(cardId: string, attachmentId: string): Promise<void> {
-  await attachmentsStore.delete(attachmentId);
-  const card = await cardsStore.get(cardId);
+  await rawAttachments.delete(attachmentId);
+  const card = await readCard(cardId);
   if (!card) return;
-  await cardsStore.put({
+  await writeCard({
     ...card,
     attachmentIds: card.attachmentIds.filter((id) => id !== attachmentId),
     updatedAt: new Date().toISOString(),
@@ -76,11 +96,16 @@ export async function deleteAttachment(cardId: string, attachmentId: string): Pr
 }
 
 export async function listAttachments(cardId: string): Promise<Attachment[]> {
-  return attachmentsStore.byCard(cardId);
+  const rows = await rawAttachments.list();
+  const decoded = await Promise.all(
+    rows.map(async (r) => {
+      const { meta, data } = await decryptPacked<AttachmentMeta>(getKey(), r.blob);
+      return { ...meta, data } as Attachment;
+    }),
+  );
+  return decoded.filter((a) => a.cardId === cardId);
 }
 
 export function attachmentBlob(att: Attachment): Blob {
-  // BlobPart requires a typed-array view backed by ArrayBuffer (not
-  // SharedArrayBuffer); the wrap forces TS into the right overload.
   return new Blob([new Uint8Array(att.data)], { type: att.mimeType });
 }

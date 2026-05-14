@@ -7,6 +7,7 @@ import EditCard from './pages/EditCard';
 import Backup from './pages/Backup';
 import Settings from './pages/Settings';
 import { UpdateBanner } from './components/UpdateBanner';
+import { VaultGate } from './components/VaultGate';
 import { requestPersistentStorage } from './core/storage';
 
 export default function App() {
@@ -19,15 +20,17 @@ export default function App() {
 
   return (
     <>
-      <Routes>
-        <Route path="/" element={<CardList />} />
-        <Route path="/cards/new" element={<AddCard />} />
-        <Route path="/cards/:id" element={<CardDetail />} />
-        <Route path="/cards/:id/edit" element={<EditCard />} />
-        <Route path="/backup" element={<Backup />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <VaultGate>
+        <Routes>
+          <Route path="/" element={<CardList />} />
+          <Route path="/cards/new" element={<AddCard />} />
+          <Route path="/cards/:id" element={<CardDetail />} />
+          <Route path="/cards/:id/edit" element={<EditCard />} />
+          <Route path="/backup" element={<Backup />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </VaultGate>
       <UpdateBanner />
     </>
   );

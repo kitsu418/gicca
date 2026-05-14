@@ -1,47 +1,21 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type {
-  Attachment,
-  CardRecord,
-  MerchantDefinition,
-  MetaKeys,
-  Transaction,
-} from './types';
+import type { MetaKeys } from './types';
 
 const DB_NAME = 'gicca';
-// v3 splits the previous `barcode: {format, value}` envelope into separate
-// `barcode?` and `qrcode?` string fields. The upgrade callback migrates
-// existing v2 cards in place.
-const DB_VERSION = 3;
+// v4 — every domain store now holds opaque { id, blob } rows; the
+// service layer encrypts on write and decrypts on read. Pre-v4 stores
+// kept full typed records with secondary indexes; we drop the index
+// paths on upgrade because they no longer match the new shape.
+const DB_VERSION = 4;
+
+export type EncryptedRow = { id: string; blob: Uint8Array };
 
 interface GiccaSchema extends DBSchema {
-  cards: {
-    key: string;
-    value: CardRecord;
-    indexes: {
-      byMerchant: string;
-      byStatus: string;
-      byUpdatedAt: string;
-      byExpiresAt: string;
-    };
-  };
-  merchants: {
-    key: string;
-    value: MerchantDefinition;
-  };
-  attachments: {
-    key: string;
-    value: Attachment;
-    indexes: { byCard: string };
-  };
-  transactions: {
-    key: string;
-    value: Transaction;
-    indexes: { byCard: string; byDate: string };
-  };
-  meta: {
-    key: string;
-    value: { key: string; value: unknown };
-  };
+  cards: { key: string; value: EncryptedRow };
+  merchants: { key: string; value: EncryptedRow };
+  attachments: { key: string; value: EncryptedRow };
+  transactions: { key: string; value: EncryptedRow };
+  meta: { key: string; value: { key: string; value: unknown } };
 }
 
 let dbPromise: Promise<IDBPDatabase<GiccaSchema>> | null = null;
@@ -49,157 +23,99 @@ let dbPromise: Promise<IDBPDatabase<GiccaSchema>> | null = null;
 export function getDb(): Promise<IDBPDatabase<GiccaSchema>> {
   if (!dbPromise) {
     dbPromise = openDB<GiccaSchema>(DB_NAME, DB_VERSION, {
-      async upgrade(db, oldVersion, _newVersion, transaction) {
-        // v0 → v1 → v2 history is irrelevant here. v1 records were
-        // AES-GCM ciphertext (vault era); v2 dropped the encryption
-        // layer and wiped the data. Any vault from that era should
-        // already have been cleared on the previous app load.
-
-        // Fresh install path: just create the v3 schema.
-        if (oldVersion < 2) {
-          for (const name of [
-            'cards',
-            'merchants',
-            'attachments',
-            'transactions',
-            'vault',
-            'meta',
-          ] as const) {
-            if (db.objectStoreNames.contains(name as never)) {
-              db.deleteObjectStore(name as never);
-            }
-          }
-
-          const cards = db.createObjectStore('cards', { keyPath: 'id' });
-          cards.createIndex('byMerchant', 'merchantId');
-          cards.createIndex('byStatus', 'status');
-          cards.createIndex('byUpdatedAt', 'updatedAt');
-          cards.createIndex('byExpiresAt', 'expiresAt');
-
-          db.createObjectStore('merchants', { keyPath: 'id' });
-
-          const attachments = db.createObjectStore('attachments', { keyPath: 'id' });
-          attachments.createIndex('byCard', 'cardId');
-
-          const transactions = db.createObjectStore('transactions', { keyPath: 'id' });
-          transactions.createIndex('byCard', 'cardId');
-          transactions.createIndex('byDate', 'date');
-
-          db.createObjectStore('meta', { keyPath: 'key' });
-          return;
-        }
-
-        // v2 → v3: split barcode envelope into separate barcode/qrcode strings.
-        if (oldVersion < 3) {
-          const cardsStore = transaction.objectStore('cards');
-          let cursor = await cardsStore.openCursor();
-          while (cursor) {
-            const card = cursor.value as CardRecord & {
-              barcode?: unknown;
-            };
-            const legacy = card.barcode as
-              | { format?: string; value?: string }
-              | string
-              | undefined;
-            if (legacy && typeof legacy === 'object' && 'value' in legacy && legacy.value) {
-              const fmt = (legacy.format ?? '').toUpperCase();
-              const isQr = fmt === 'QR' || fmt === 'AZTEC' || fmt === 'DATAMATRIX' || fmt === 'PDF417';
-              const next: CardRecord = {
-                ...card,
-                barcode: isQr ? undefined : legacy.value,
-                qrcode: isQr ? legacy.value : undefined,
-              };
-              await cursor.update(next);
-            }
-            cursor = await cursor.continue();
+      upgrade(db, oldVersion) {
+        // Going to v4 wipes every domain store. Older records were
+        // plaintext (and any pre-v2 ciphertext was already orphaned
+        // when encryption was first removed); there's no reasonable
+        // way to migrate them without the user's new passphrase, and
+        // the user opting in to encryption has consented to that.
+        for (const name of [
+          'cards',
+          'merchants',
+          'attachments',
+          'transactions',
+          'vault',
+          'meta',
+        ] as const) {
+          if (db.objectStoreNames.contains(name as never)) {
+            db.deleteObjectStore(name as never);
           }
         }
+        db.createObjectStore('cards', { keyPath: 'id' });
+        db.createObjectStore('merchants', { keyPath: 'id' });
+        db.createObjectStore('attachments', { keyPath: 'id' });
+        db.createObjectStore('transactions', { keyPath: 'id' });
+        db.createObjectStore('meta', { keyPath: 'key' });
+        void oldVersion; // silence linter — version-specific paths intentionally not branched
       },
     });
   }
   return dbPromise;
 }
 
-// ─── Cards ────────────────────────────────────────────────────────────────
+// ─── Raw encrypted-row access ────────────────────────────────────────────
 
-export const cards = {
-  async get(id: string): Promise<CardRecord | undefined> {
+export const rawCards = {
+  async get(id: string): Promise<EncryptedRow | undefined> {
     return (await getDb()).get('cards', id);
   },
-  async list(opts: { includeDeleted?: boolean } = {}): Promise<CardRecord[]> {
-    const all = await (await getDb()).getAll('cards');
-    return opts.includeDeleted ? all : all.filter((c) => !c.deletedAt);
+  async list(): Promise<EncryptedRow[]> {
+    return (await getDb()).getAll('cards');
   },
-  async put(card: CardRecord): Promise<void> {
-    await (await getDb()).put('cards', card);
+  async put(row: EncryptedRow): Promise<void> {
+    await (await getDb()).put('cards', row);
   },
   async delete(id: string): Promise<void> {
     await (await getDb()).delete('cards', id);
   },
-  async softDelete(id: string): Promise<void> {
-    const db = await getDb();
-    const existing = await db.get('cards', id);
-    if (!existing) return;
-    await db.put('cards', {
-      ...existing,
-      deletedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-  },
 };
 
-// ─── User merchants ───────────────────────────────────────────────────────
-
-export const userMerchants = {
-  async get(id: string): Promise<MerchantDefinition | undefined> {
+export const rawMerchants = {
+  async get(id: string): Promise<EncryptedRow | undefined> {
     return (await getDb()).get('merchants', id);
   },
-  async list(): Promise<MerchantDefinition[]> {
+  async list(): Promise<EncryptedRow[]> {
     return (await getDb()).getAll('merchants');
   },
-  async put(m: MerchantDefinition): Promise<void> {
-    await (await getDb()).put('merchants', m);
+  async put(row: EncryptedRow): Promise<void> {
+    await (await getDb()).put('merchants', row);
   },
   async delete(id: string): Promise<void> {
     await (await getDb()).delete('merchants', id);
   },
 };
 
-// ─── Attachments ──────────────────────────────────────────────────────────
-
-export const attachments = {
-  async get(id: string): Promise<Attachment | undefined> {
+export const rawAttachments = {
+  async get(id: string): Promise<EncryptedRow | undefined> {
     return (await getDb()).get('attachments', id);
   },
-  async byCard(cardId: string): Promise<Attachment[]> {
-    return (await getDb()).getAllFromIndex('attachments', 'byCard', cardId);
+  async list(): Promise<EncryptedRow[]> {
+    return (await getDb()).getAll('attachments');
   },
-  async put(a: Attachment): Promise<void> {
-    await (await getDb()).put('attachments', a);
+  async put(row: EncryptedRow): Promise<void> {
+    await (await getDb()).put('attachments', row);
   },
   async delete(id: string): Promise<void> {
     await (await getDb()).delete('attachments', id);
   },
 };
 
-// ─── Transactions ─────────────────────────────────────────────────────────
-
-export const transactions = {
-  async get(id: string): Promise<Transaction | undefined> {
+export const rawTransactions = {
+  async get(id: string): Promise<EncryptedRow | undefined> {
     return (await getDb()).get('transactions', id);
   },
-  async byCard(cardId: string): Promise<Transaction[]> {
-    return (await getDb()).getAllFromIndex('transactions', 'byCard', cardId);
+  async list(): Promise<EncryptedRow[]> {
+    return (await getDb()).getAll('transactions');
   },
-  async put(t: Transaction): Promise<void> {
-    await (await getDb()).put('transactions', t);
+  async put(row: EncryptedRow): Promise<void> {
+    await (await getDb()).put('transactions', row);
   },
   async delete(id: string): Promise<void> {
     await (await getDb()).delete('transactions', id);
   },
 };
 
-// ─── Meta (typed key-value) ───────────────────────────────────────────────
+// ─── Meta (typed key-value, plaintext) ───────────────────────────────────
 
 export const meta = {
   async get<K extends keyof MetaKeys>(key: K): Promise<MetaKeys[K] | undefined> {

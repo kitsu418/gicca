@@ -1,28 +1,35 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Screen } from '../components/ui';
+import { Button, Input, Screen } from '../components/ui';
 import {
   downloadBackup,
   importBackupReplacing,
-  readBackup,
   type ImportSummary,
 } from '../core/backup';
 
 export default function Backup() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const [exportPw, setExportPw] = useState('');
+  const [importPw, setImportPw] = useState('');
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
 
   async function handleExport() {
+    if (exportPw.length < 8) {
+      setError('Use at least 8 characters');
+      return;
+    }
     setBusy(true);
     setError(null);
     setMessage(null);
     try {
-      await downloadBackup();
-      setMessage('Backup file generated. Store it somewhere only you can reach — it is not encrypted.');
+      await downloadBackup(exportPw);
+      setMessage('Backup file generated. The file is encrypted — keep the passphrase somewhere only you can reach.');
+      setExportPw('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Export failed');
     } finally {
@@ -30,23 +37,21 @@ export default function Backup() {
     }
   }
 
-  async function handleImport(file: File) {
+  async function handleImport() {
+    if (!pendingFile) return;
     setError(null);
     setMessage(null);
     setSummary(null);
+    const ok = window.confirm(
+      'This will replace all data on this device with the backup. Continue?',
+    );
+    if (!ok) return;
     setBusy(true);
     try {
-      const parsed = await readBackup(file);
-      const exportedAt = new Date(parsed.exportedAt).toLocaleString();
-      const ok = window.confirm(
-        `This will replace all data on this device.\nBackup date: ${exportedAt}\nCards: ${parsed.payload.cards.length}\n\nContinue?`,
-      );
-      if (!ok) {
-        setBusy(false);
-        return;
-      }
-      const result = await importBackupReplacing(file);
+      const result = await importBackupReplacing(pendingFile, importPw);
       setSummary(result);
+      setImportPw('');
+      setPendingFile(null);
       setMessage('Import succeeded.');
       setTimeout(() => navigate('/', { replace: true }), 1200);
     } catch (e) {
@@ -71,13 +76,21 @@ export default function Backup() {
           <div className="space-y-1">
             <h2 className="font-medium">Export backup</h2>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Generates a <code>.gicca</code> file with every card, photo, and
-              transaction. <strong className="text-amber-300">The file is
-              plaintext</strong> — anyone with the file can read your card
-              numbers. Save it somewhere private.
+              Generates an encrypted <code>.gicca</code> file with every card,
+              photo, and transaction. Pick a passphrase you'll remember —{' '}
+              <strong className="text-amber-300">there is no recovery</strong>{' '}
+              without it.
             </p>
           </div>
-          <Button className="w-full" onClick={handleExport} disabled={busy}>
+          <Input
+            type="password"
+            label="Export passphrase"
+            value={exportPw}
+            onChange={(e) => setExportPw(e.target.value)}
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
+          />
+          <Button className="w-full" onClick={handleExport} disabled={busy || !exportPw}>
             {busy ? 'Working…' : 'Export'}
           </Button>
         </section>
@@ -87,27 +100,48 @@ export default function Backup() {
             <h2 className="font-medium">Import from backup</h2>
             <p className="text-sm text-slate-400 leading-relaxed">
               <strong className="text-rose-400">Replaces all data on this device.</strong>
-              {' '}Use for migrating to a new device.
+              {' '}Pick the <code>.gicca</code> file, then enter the passphrase
+              it was exported with.
             </p>
           </div>
           <input
             ref={fileRef}
             type="file"
-            accept=".gicca,application/json"
+            accept=".gicca,application/octet-stream"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) void handleImport(f);
+              if (f) setPendingFile(f);
             }}
           />
           <Button
-            variant="danger"
+            variant="secondary"
             className="w-full"
             onClick={() => fileRef.current?.click()}
             disabled={busy}
           >
-            {busy ? 'Working…' : 'Choose .gicca file'}
+            {pendingFile ? `File: ${pendingFile.name}` : 'Choose .gicca file'}
           </Button>
+          {pendingFile && (
+            <>
+              <Input
+                type="password"
+                label="Backup passphrase"
+                value={importPw}
+                onChange={(e) => setImportPw(e.target.value)}
+                placeholder="The passphrase used to export"
+                autoComplete="off"
+              />
+              <Button
+                variant="danger"
+                className="w-full"
+                onClick={handleImport}
+                disabled={busy || !importPw}
+              >
+                {busy ? 'Importing…' : 'Replace local data'}
+              </Button>
+            </>
+          )}
         </section>
 
         {message && <p className="text-sm text-emerald-400">{message}</p>}

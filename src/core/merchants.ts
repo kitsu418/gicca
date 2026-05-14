@@ -10,8 +10,10 @@
 // without affecting other devices.
 
 import { useEffect, useSyncExternalStore } from 'react';
-import { userMerchants } from './db';
+import { decryptJson, encryptJson } from './crypto';
+import { rawMerchants } from './db';
 import type { MerchantDefinition } from './types';
+import { getKey, subscribe as subscribeVault } from './vault';
 
 // ─── Builtin loading ──────────────────────────────────────────────────────
 
@@ -38,10 +40,19 @@ function notify() {
 }
 
 async function refreshUserCache(): Promise<void> {
-  userCache = await userMerchants.list();
+  const rows = await rawMerchants.list();
+  userCache = await Promise.all(
+    rows.map((r) => decryptJson<MerchantDefinition>(getKey(), r.blob)),
+  );
   loaded = true;
   notify();
 }
+
+subscribeVault(() => {
+  loaded = false;
+  userCache = [];
+  notify();
+});
 
 export async function ensureMerchantsLoaded(): Promise<void> {
   if (!loaded) await refreshUserCache();
@@ -96,12 +107,13 @@ export function searchMerchants(query: string, limit = 50): MerchantDefinition[]
 
 export async function saveUserMerchant(m: MerchantDefinition): Promise<void> {
   const record: MerchantDefinition = { ...m, source: 'user' };
-  await userMerchants.put(record);
+  const blob = await encryptJson(getKey(), record);
+  await rawMerchants.put({ id: record.id, blob });
   await refreshUserCache();
 }
 
 export async function deleteUserMerchant(id: string): Promise<void> {
-  await userMerchants.delete(id);
+  await rawMerchants.delete(id);
   await refreshUserCache();
 }
 

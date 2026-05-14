@@ -5,6 +5,7 @@ import { MerchantEditor } from '../components/MerchantEditor';
 import { wipeAll } from '../core/db';
 import { hasBuiltin, useMerchants } from '../core/merchants';
 import type { MerchantDefinition } from '../core/types';
+import { lockVault, resetVaultState } from '../core/vault';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function Settings() {
 
         <MerchantsSection />
         <BackupShortcut onNavigate={() => navigate('/backup')} />
+        <VaultSection />
         <AboutSection />
         <DangerZone onWiped={() => navigate('/', { replace: true })} />
       </div>
@@ -81,10 +83,23 @@ function BackupShortcut({ onNavigate }: { onNavigate: () => void }) {
   return (
     <SettingsSection
       title="Backup / Migrate"
-      description="Export a backup file or restore from one. Cards are not encrypted in the file — store it somewhere only you can reach."
+      description="Export an encrypted backup file or restore from one. The backup is locked with a passphrase you pick at export time."
     >
       <Button variant="secondary" onClick={onNavigate}>
         Open backup page
+      </Button>
+    </SettingsSection>
+  );
+}
+
+function VaultSection() {
+  return (
+    <SettingsSection
+      title="Vault"
+      description="Locking forgets the passphrase from memory. You'll need to enter it again the next time you open the app."
+    >
+      <Button variant="secondary" onClick={lockVault}>
+        Lock vault now
       </Button>
     </SettingsSection>
   );
@@ -94,7 +109,8 @@ function AboutSection() {
   return (
     <SettingsSection title="About" description="Local-first gift card vault. No accounts, no servers, no telemetry.">
       <p className="text-xs text-slate-500">
-        Card data lives in this device's IndexedDB. Use the backup page to move
+        Card data lives in this device's IndexedDB, encrypted with a key
+        derived from your master passphrase. Use the backup page to move
         between devices.
       </p>
     </SettingsSection>
@@ -106,6 +122,7 @@ function DangerZone({ onWiped }: { onWiped: () => void }) {
     const phrase = window.prompt('This wipes every Gicca record on this device (cannot be undone). Type RESET to confirm:');
     if (phrase !== 'RESET') return;
     await wipeAll();
+    resetVaultState();
     onWiped();
   }
 
