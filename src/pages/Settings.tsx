@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Screen } from '../components/ui';
 import { MerchantEditor } from '../components/MerchantEditor';
 import { wipeAll } from '../core/db';
 import { hasBuiltin, useMerchants } from '../core/merchants';
-import type { MerchantDefinition } from '../core/types';
+import { loadTheme, saveTheme } from '../core/theme';
+import type { MerchantDefinition, ThemeName } from '../core/types';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -18,12 +19,72 @@ export default function Settings() {
           <h1 className="text-xl font-semibold">Settings</h1>
         </div>
 
+        <ThemeSection />
         <MerchantsSection />
         <BackupShortcut onNavigate={() => navigate('/backup')} />
         <AboutSection />
         <DangerZone onWiped={() => navigate('/', { replace: true })} />
       </div>
     </Screen>
+  );
+}
+
+function ThemeSection() {
+  const [theme, setThemeState] = useState<ThemeName>('default');
+
+  useEffect(() => {
+    void loadTheme().then(setThemeState);
+  }, []);
+
+  async function pick(next: ThemeName) {
+    setThemeState(next);
+    await saveTheme(next);
+  }
+
+  const options: { value: ThemeName; label: string; description: string }[] = [
+    {
+      value: 'default',
+      label: 'Default',
+      description: 'Dark slate, rounded cards with brand-color sheen.',
+    },
+    {
+      value: 'brutalist',
+      label: 'Brutalist',
+      description: 'Pure black, thick white borders, no rounding, electric-yellow primary.',
+    },
+    {
+      value: 'newsprint',
+      label: 'Newsprint',
+      description: 'Warm paper, ink hairlines, serif body, vermilion stamp accent.',
+    },
+  ];
+
+  return (
+    <SettingsSection title="Theme" description="Changes apply immediately.">
+      <div className="space-y-2">
+        {options.map((o) => (
+          <label
+            key={o.value}
+            className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900 p-3 cursor-pointer brutalist:rounded-none brutalist:border-white brutalist:border-2 brutalist:bg-black newsprint:rounded-none newsprint:border-[#161310] newsprint:bg-transparent"
+          >
+            <input
+              type="radio"
+              name="theme"
+              value={o.value}
+              checked={theme === o.value}
+              onChange={() => pick(o.value)}
+              className="mt-1 accent-sky-500 brutalist:accent-yellow-300 newsprint:accent-[#c8202c]"
+            />
+            <div className="min-w-0">
+              <div className="font-medium">{o.label}</div>
+              <div className="text-xs text-slate-400 brutalist:text-white/70 newsprint:text-[#161310]/70">
+                {o.description}
+              </div>
+            </div>
+          </label>
+        ))}
+      </div>
+    </SettingsSection>
   );
 }
 

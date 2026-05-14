@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button, Screen } from '../components/ui';
 import { MerchantCard } from '../components/MerchantCard';
 import { BackupReminder } from '../components/BackupReminder';
+import { Masthead } from '../components/Masthead';
 import { useCards } from '../core/cards';
+import { useTheme } from '../hooks/useTheme';
 import type { CardRecord, CardStatus } from '../core/types';
 
 type StatusFilter = 'all' | CardStatus;
@@ -35,9 +37,11 @@ const SORT_OPTIONS: { value: Sort; label: string }[] = [
 export default function CardList() {
   const cards = useCards();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [sort, setSort] = useState<Sort>('recently_updated');
+  const isNewsprint = theme === 'newsprint';
 
   const visible = useMemo(
     () => applyFilters(cards, query, status, sort),
@@ -47,17 +51,32 @@ export default function CardList() {
   return (
     <Screen>
       <div className="max-w-md mx-auto p-6 space-y-5 pb-24">
-        <header className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">Gicca</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate('/backup')}>
-              Backup
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/settings')}>
-              Settings
-            </Button>
-          </div>
-        </header>
+        {isNewsprint ? (
+          <>
+            <Masthead />
+            <nav className="flex items-center justify-center gap-6 text-[11px] uppercase tracking-[0.3em] font-mono">
+              <button onClick={() => navigate('/backup')} className="hover:underline">
+                Backup
+              </button>
+              <span aria-hidden="true">·</span>
+              <button onClick={() => navigate('/settings')} className="hover:underline">
+                Settings
+              </button>
+            </nav>
+          </>
+        ) : (
+          <header className="flex items-center justify-between">
+            <h1 className="text-2xl font-semibold tracking-tight">Gicca</h1>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => navigate('/backup')}>
+                Backup
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/settings')}>
+                Settings
+              </Button>
+            </div>
+          </header>
+        )}
 
         <BackupReminder hasCards={cards.length > 0} />
 
@@ -76,6 +95,29 @@ export default function CardList() {
           <EmptyState />
         ) : visible.length === 0 ? (
           <NoMatches onClear={() => { setQuery(''); setStatus('all'); }} />
+        ) : isNewsprint ? (
+          // Newspaper front-page grid: two strict columns with both vertical
+          // and horizontal rules between every story. Each story is a
+          // MerchantCard rendering its vertical-RL serif headline.
+          <div className="grid grid-cols-2 border border-[#161310]">
+            {visible.map((c, i) => {
+              const isRightCol = i % 2 === 1;
+              const isFirstRow = i < 2;
+              return (
+                <Link
+                  key={c.id}
+                  to={`/cards/${c.id}`}
+                  className={[
+                    'block',
+                    isRightCol ? '' : 'border-r border-[#161310]',
+                    isFirstRow ? '' : 'border-t border-[#161310]',
+                  ].filter(Boolean).join(' ')}
+                >
+                  <MerchantCard card={c} />
+                </Link>
+              );
+            })}
+          </div>
         ) : (
           <ul className="space-y-4">
             {visible.map((c) => (
@@ -93,7 +135,7 @@ export default function CardList() {
 
         <Link
           to="/cards/new"
-          className="fixed bottom-6 right-6 left-6 max-w-md mx-auto inline-flex items-center justify-center rounded-2xl bg-sky-500 hover:bg-sky-400 text-white px-4 py-3 font-medium shadow-lg shadow-sky-500/20"
+          className="fixed bottom-6 right-6 left-6 max-w-md mx-auto inline-flex items-center justify-center rounded-2xl bg-sky-500 hover:bg-sky-400 text-white px-4 py-3 font-medium shadow-lg shadow-sky-500/20 brutalist:rounded-none brutalist:bg-yellow-300 brutalist:text-black brutalist:border-2 brutalist:border-white brutalist:shadow-none brutalist:uppercase brutalist:tracking-wider newsprint:rounded-none newsprint:bg-[#c8202c] newsprint:text-white newsprint:shadow-none newsprint:uppercase newsprint:tracking-[0.3em] newsprint:font-mono newsprint:border-2 newsprint:border-[#161310]"
         >
           + Add gift card
         </Link>
@@ -125,12 +167,12 @@ function Controls({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Search by merchant or note…"
-          className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+          className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black brutalist:focus:border-yellow-300 brutalist:focus:ring-0 brutalist:placeholder-white/40 newsprint:rounded-none newsprint:border-b newsprint:border-t-0 newsprint:border-l-0 newsprint:border-r-0 newsprint:border-[#161310] newsprint:bg-transparent newsprint:text-[#161310] newsprint:placeholder-[#161310]/40 newsprint:focus:ring-0 newsprint:font-serif newsprint:italic"
         />
         <select
           value={sort}
           onChange={(e) => onSortChange(e.target.value as Sort)}
-          className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+          className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 brutalist:rounded-none brutalist:border-2 brutalist:border-white brutalist:bg-black brutalist:focus:border-yellow-300 brutalist:focus:ring-0 newsprint:rounded-none newsprint:border-b newsprint:border-t-0 newsprint:border-l-0 newsprint:border-r-0 newsprint:border-[#161310] newsprint:bg-transparent newsprint:text-[#161310] newsprint:focus:ring-0 newsprint:font-mono newsprint:uppercase newsprint:text-[11px] newsprint:tracking-wider"
           aria-label="Sort"
         >
           {SORT_OPTIONS.map((o) => (
@@ -145,10 +187,10 @@ function Controls({
           <button
             key={c.value}
             onClick={() => onStatusChange(c.value)}
-            className={`shrink-0 rounded-full px-3 py-1 text-xs border transition ${
+            className={`shrink-0 rounded-full px-3 py-1 text-xs border transition brutalist:rounded-none brutalist:border-2 brutalist:transition-none brutalist:uppercase brutalist:tracking-wider newsprint:rounded-none newsprint:border newsprint:transition-none newsprint:uppercase newsprint:tracking-[0.2em] newsprint:font-mono ${
               status === c.value
-                ? 'bg-sky-500 border-sky-400 text-white'
-                : 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                ? 'bg-sky-500 border-sky-400 text-white brutalist:bg-yellow-300 brutalist:text-black brutalist:border-white newsprint:bg-[#161310] newsprint:text-[#f4f1ea] newsprint:border-[#161310]'
+                : 'border-slate-700 text-slate-300 hover:bg-slate-800 brutalist:border-white brutalist:text-white brutalist:hover:bg-white brutalist:hover:text-black newsprint:border-[#161310] newsprint:text-[#161310] newsprint:hover:bg-[#161310] newsprint:hover:text-[#f4f1ea]'
             }`}
           >
             {c.label}
