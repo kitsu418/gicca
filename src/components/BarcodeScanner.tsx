@@ -3,6 +3,7 @@
 // actually opens the scanner.
 
 import { useEffect, useRef, useState } from 'react';
+import type { DecodeHintType } from '@zxing/library';
 import { Button } from './ui';
 import type { CodeKind } from '../core/types';
 
@@ -36,12 +37,49 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
 
     (async () => {
       try {
-        const mod = await import('@zxing/browser');
+        const [browser, library] = await Promise.all([
+          import('@zxing/browser'),
+          import('@zxing/library'),
+        ]);
         if (cancelled) return;
         if (!videoRef.current) return;
-        const reader = new mod.BrowserMultiFormatReader();
-        controls = (await reader.decodeFromVideoDevice(
-          undefined,
+
+        // Hints tell the decoder which formats to look for and to spend
+        // more compute on each frame. Without these, the default reader
+        // tries every format with a fast pass per frame, which on iOS
+        // Safari ends up never locking onto a gift-card barcode held
+        // inside the viewfinder.
+        const hints = new Map<DecodeHintType, unknown>();
+        hints.set(library.DecodeHintType.TRY_HARDER, true);
+        hints.set(library.DecodeHintType.POSSIBLE_FORMATS, [
+          library.BarcodeFormat.CODE_128,
+          library.BarcodeFormat.CODE_39,
+          library.BarcodeFormat.CODE_93,
+          library.BarcodeFormat.EAN_13,
+          library.BarcodeFormat.EAN_8,
+          library.BarcodeFormat.UPC_A,
+          library.BarcodeFormat.UPC_E,
+          library.BarcodeFormat.ITF,
+          library.BarcodeFormat.CODABAR,
+          library.BarcodeFormat.QR_CODE,
+          library.BarcodeFormat.DATA_MATRIX,
+          library.BarcodeFormat.PDF_417,
+          library.BarcodeFormat.AZTEC,
+        ]);
+
+        const reader = new browser.BrowserMultiFormatReader(hints, {
+          delayBetweenScanAttempts: 100,
+          delayBetweenScanSuccess: 100,
+        });
+
+        controls = (await reader.decodeFromConstraints(
+          {
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+          },
           videoRef.current,
           (result) => {
             if (!result) return;
