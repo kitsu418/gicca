@@ -146,7 +146,7 @@ function FullscreenViewer({
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col animate-[gicca-backdrop-in_0.22s_ease-out_both]" onClick={onClose}>
-      <div className="absolute top-0 left-0 right-0 flex justify-between p-4 text-white z-10">
+      <div className="absolute top-0 left-0 right-0 flex justify-between p-4 pt-[max(1rem,env(safe-area-inset-top))] text-white z-10">
         <button onClick={onClose} className="text-sm">
           Close
         </button>

@@ -16,6 +16,14 @@ body,
   height: 100%;
 }
 
+/* Match the Screen background so the area outside the scroll content
+   (Safari's bottom URL-bar gap, iOS rubber-band overscroll, the safe-area
+   strips around the dynamic island and home indicator) doesn't flash white. */
+html,
+body {
+  background-color: #020617; /* slate-950 */
+}
+
 body {
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;

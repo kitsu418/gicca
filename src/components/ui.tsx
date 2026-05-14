@@ -64,9 +64,16 @@ export function Input({
   );
 }
 
+// Tailwind v4 arbitrary value classes for the iOS safe-area insets. Padding
+// keeps the background colour bleeding to the edges while pushing content
+// clear of the dynamic island / home indicator on installed PWAs.
+const SAFE_AREA_PADDING =
+  'pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] ' +
+  'pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]';
+
 export function Screen({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`min-h-dvh bg-slate-950 text-slate-100 ${className}`}>
+    <div className={`min-h-dvh bg-slate-950 text-slate-100 ${SAFE_AREA_PADDING} ${className}`}>
       {children}
     </div>
   );
@@ -74,7 +81,7 @@ export function Screen({ children, className = '' }: { children: ReactNode; clas
 
 export function CenteredCard({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh flex items-center justify-center p-6 bg-slate-950 text-slate-100">
+    <div className={`min-h-dvh flex items-center justify-center p-6 bg-slate-950 text-slate-100 ${SAFE_AREA_PADDING}`}>
       <div className="w-full max-w-md space-y-6">{children}</div>
     </div>
   );

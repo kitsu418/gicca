@@ -66,7 +66,7 @@ export function MerchantEditor({ merchant, builtinExists, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-end sm:items-center justify-center p-4 animate-[gicca-backdrop-in_0.22s_ease-out_both]"
+      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-end sm:items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] animate-[gicca-backdrop-in_0.22s_ease-out_both]"
       onClick={onClose}
     >
       <div
