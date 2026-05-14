@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Button, Screen } from '../components/ui';
@@ -35,13 +35,6 @@ const SORT_OPTIONS: { value: Sort; label: string }[] = [
   { value: 'name_az', label: 'Merchant A → Z' },
 ];
 
-// Pixel thresholds for the in-stack gestures.
-const SWIPE_LEFT_DISMISS = 80; // px left → trigger delete confirmation
-const SWIPE_UP_OPEN = 50; // px up → open the card
-
-const AXIS_LOCK_DELTA = 10; // px in either direction → commit to an axis
-const DRAG_DOWN_CLOSE = 120; // px down on hero → collapse back to stack
-
 // Once the deal-out flourish has run, later remounts skip it. Without this
 // the entry animation re-runs every time we come back from a sub-view and
 // fights the View Transitions snapshot at handover.
@@ -72,18 +65,6 @@ export default function CardList() {
     } else {
       apply();
     }
-  }
-
-  async function handleDeleteConfirm(card: CardRecord) {
-    const ok = window.confirm(
-      `Delete the ${card.merchantSnapshot.name} card? This cannot be undone.`,
-    );
-    if (!ok) return;
-    withTransition(() => {
-      // useCards re-fetches on mutation; the row just disappears with the
-      // root cross-fade.
-      void deleteCard(card.id);
-    });
   }
 
   if (adding) {
@@ -153,7 +134,6 @@ export default function CardList() {
           <WalletStack
             cards={visible}
             onOpen={(id) => withTransition(() => setExpandedId(id))}
-            onDeleteConfirm={handleDeleteConfirm}
           />
         )}
 
@@ -169,7 +149,7 @@ export default function CardList() {
   );
 }
 
-// ─── Inline expanded view (drag-down to close) ────────────────────────────
+// ─── Inline expanded view ────────────────────────────────────────────────
 
 function ExpandedView({
   card,
@@ -184,48 +164,11 @@ function ExpandedView({
   onEdit: () => void;
   onDeleted: () => void;
 }) {
-  const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const dragRef = useRef<{ active: boolean; startY: number }>({
-    active: false,
-    startY: 0,
-  });
-
   async function handleDelete() {
     if (!window.confirm(`Delete the ${card.merchantSnapshot.name} card?`)) return;
     await deleteCard(card.id);
     onDeleted();
   }
-
-  function onPointerDown(e: React.PointerEvent) {
-    dragRef.current.active = true;
-    dragRef.current.startY = e.clientY;
-    setDragging(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }
-  function onPointerMove(e: React.PointerEvent) {
-    if (!dragRef.current.active) return;
-    const dy = e.clientY - dragRef.current.startY;
-    if (dy >= 0) setDragY(dy);
-  }
-  function onPointerUp(e: React.PointerEvent) {
-    if (!dragRef.current.active) return;
-    dragRef.current.active = false;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // already released
-    }
-    const releasedAt = dragY;
-    setDragging(false);
-    setDragY(0);
-    if (releasedAt > DRAG_DOWN_CLOSE) onClose();
-  }
-
-  const transform = dragY > 0
-    ? `translateY(${dragY}px) scale(${Math.max(0.85, 1 - dragY / 1500)})`
-    : undefined;
-  const opacity = dragY > 0 ? Math.max(0.3, 1 - dragY / 700) : 1;
 
   return (
     <Screen>
@@ -244,30 +187,9 @@ function ExpandedView({
           </div>
         </div>
 
-        <div
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          className="cursor-grab active:cursor-grabbing select-none"
-          style={
-            {
-              transform,
-              opacity,
-              touchAction: 'pan-y',
-              transition: dragging
-                ? undefined
-                : 'transform 0.3s cubic-bezier(0.2, 0.85, 0.3, 1), opacity 0.3s ease',
-              viewTransitionName: `mc-${card.id}`,
-            } as React.CSSProperties
-          }
-        >
+        <div style={{ viewTransitionName: `mc-${card.id}` }}>
           <MerchantCard card={card} />
         </div>
-
-        <p className="text-center text-xs text-slate-500 -mt-1 select-none">
-          Pull the card down to put it back
-        </p>
 
         <CardDetailBody card={card} onRefresh={onRefresh} />
       </div>
@@ -280,11 +202,9 @@ function ExpandedView({
 function WalletStack({
   cards,
   onOpen,
-  onDeleteConfirm,
 }: {
   cards: readonly CardRecord[];
   onOpen: (id: string) => void;
-  onDeleteConfirm: (card: CardRecord) => void;
 }) {
   const OVERLAP_DEALT = -170;
   const OVERLAP_TIGHT = -245;
@@ -328,7 +248,6 @@ function WalletStack({
             index={i}
             firstDeal={firstDeal}
             onOpen={() => onOpen(c.id)}
-            onDeleteConfirm={() => onDeleteConfirm(c)}
           />
         </li>
       ))}
@@ -336,135 +255,36 @@ function WalletStack({
   );
 }
 
-// Each card in the stack handles its own gestures:
-//   - tap          → open (full view transition morph)
-//   - drag up      → open (same morph)
-//   - drag left    → confirm delete (window.confirm)
-// Pointer events are axis-locked after AXIS_LOCK_DELTA so a tiny touch
-// shake doesn't accidentally trigger either swipe.
+// Tap to open. Deletion lives inside the expanded view so the stack
+// itself stays free of swipe gestures that fight the browser's own
+// edge-swipes for back/forward and the iOS app-switcher.
 function CardRow({
   card,
   index,
   firstDeal,
   onOpen,
-  onDeleteConfirm,
 }: {
   card: CardRecord;
   index: number;
   firstDeal: boolean;
   onOpen: () => void;
-  onDeleteConfirm: () => void;
 }) {
-  const [dragX, setDragX] = useState(0);
-  const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const dragRef = useRef<{
-    active: boolean;
-    x0: number;
-    y0: number;
-    axis: 'x' | 'y' | null;
-  }>({ active: false, x0: 0, y0: 0, axis: null });
-  const suppressClickRef = useRef(false);
-
-  function onPointerDown(e: React.PointerEvent) {
-    dragRef.current = { active: true, x0: e.clientX, y0: e.clientY, axis: null };
-    setDragging(true);
-    suppressClickRef.current = false;
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
-  }
-  function onPointerMove(e: React.PointerEvent) {
-    if (!dragRef.current.active) return;
-    const dx = e.clientX - dragRef.current.x0;
-    const dy = e.clientY - dragRef.current.y0;
-    if (!dragRef.current.axis) {
-      if (Math.abs(dx) > AXIS_LOCK_DELTA) dragRef.current.axis = 'x';
-      else if (Math.abs(dy) > AXIS_LOCK_DELTA) dragRef.current.axis = 'y';
-    }
-    if (dragRef.current.axis === 'x' && dx < 0) {
-      setDragX(dx);
-    } else if (dragRef.current.axis === 'y' && dy < 0) {
-      setDragY(dy);
-    }
-  }
-  function onPointerUp(e: React.PointerEvent) {
-    if (!dragRef.current.active) return;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
-    const axis = dragRef.current.axis;
-    const finalDx = dragX;
-    const finalDy = dragY;
-    dragRef.current.active = false;
-    dragRef.current.axis = null;
-    setDragging(false);
-    setDragX(0);
-    setDragY(0);
-    if (axis === 'x' && finalDx <= -SWIPE_LEFT_DISMISS) {
-      suppressClickRef.current = true;
-      onDeleteConfirm();
-    } else if (axis === 'y' && finalDy <= -SWIPE_UP_OPEN) {
-      suppressClickRef.current = true;
-      onOpen();
-    }
-  }
-  function onClick() {
-    if (suppressClickRef.current) {
-      suppressClickRef.current = false;
-      return;
-    }
-    onOpen();
-  }
-
-  // Red "delete" affordance peeks from the right as the user swipes left.
-  const showDeleteAffordance = dragX < 0;
-  const dragTransform =
-    dragX !== 0 || dragY !== 0
-      ? `translate(${dragX}px, ${dragY}px)`
-      : undefined;
-
   return (
-    <div className="relative">
-      {/* Delete affordance behind the card, revealed during left-swipe */}
-      <div
-        className="absolute inset-0 rounded-2xl bg-rose-600/90 flex items-center justify-end pr-6 pointer-events-none"
-        style={{ opacity: showDeleteAffordance ? Math.min(1, -dragX / 80) : 0 }}
-      >
-        <span className="text-white text-sm font-semibold uppercase tracking-wider">
-          Delete
-        </span>
-      </div>
-
-      <button
-        type="button"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onClick={onClick}
-        className="block w-full text-left transition-transform duration-200 ease-out hover:-translate-y-1.5 select-none"
-        style={
-          {
-            ...(firstDeal && {
-              animation: `wallet-card-in 0.55s cubic-bezier(0.2,0.85,0.3,1) ${index * 55}ms backwards`,
-            }),
-            transform: dragTransform,
-            transition: dragging
-              ? undefined
-              : 'transform 0.25s cubic-bezier(0.2, 0.85, 0.3, 1)',
-            touchAction: 'pan-y',
-            viewTransitionName: `mc-${card.id}`,
-          } as React.CSSProperties
-        }
-      >
-        <MerchantCard card={card} />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={onOpen}
+      className="block w-full text-left transition-transform duration-200 ease-out hover:-translate-y-1.5"
+      style={
+        {
+          ...(firstDeal && {
+            animation: `wallet-card-in 0.55s cubic-bezier(0.2,0.85,0.3,1) ${index * 55}ms backwards`,
+          }),
+          viewTransitionName: `mc-${card.id}`,
+        } as React.CSSProperties
+      }
+    >
+      <MerchantCard card={card} />
+    </button>
   );
 }
 

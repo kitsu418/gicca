@@ -78,7 +78,7 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
       initialValue: initial.initialValue != null ? (initial.initialValue / 100).toString() : '',
       balance: initial.balance != null ? (initial.balance / 100).toString() : '',
       currency: initial.currency ?? '',
-      expiresAt: initial.expiresAt?.slice(0, 10) ?? '',
+      expiresAt: isoToExpiry(initial.expiresAt),
       barcode: initial.barcode ?? '',
       qrcode: initial.qrcode ?? '',
     });
@@ -112,6 +112,12 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
       setError('Card number is required');
       return;
     }
+    const trimmedExpiry = values.expiresAt.trim();
+    const expiresIso = trimmedExpiry ? expiryToIso(trimmedExpiry) : undefined;
+    if (trimmedExpiry && !expiresIso) {
+      setError('Expires must be MM/YYYY');
+      return;
+    }
     setBusy(true);
     try {
       await onSubmit({
@@ -124,7 +130,7 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         initialValue: parseMoney(values.initialValue),
         balance: parseMoney(values.balance),
         currency: values.currency.trim() || values.merchant.defaultCurrency || undefined,
-        expiresAt: values.expiresAt ? new Date(values.expiresAt).toISOString() : undefined,
+        expiresAt: expiresIso,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');
@@ -225,9 +231,11 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         />
         <Input
           label="Expires"
-          type="date"
+          inputMode="numeric"
           value={values.expiresAt}
-          onChange={(e) => update('expiresAt', e.target.value)}
+          onChange={(e) => update('expiresAt', formatExpiryInput(e.target.value))}
+          placeholder="MM/YYYY"
+          maxLength={7}
         />
       </div>
 
@@ -299,4 +307,33 @@ function parseMoney(s: string): number | undefined {
   const n = Number(trimmed);
   if (!Number.isFinite(n)) return undefined;
   return Math.round(n * 100);
+}
+
+// Strip everything but digits and auto-insert "/" after MM so the field
+// reads MM/YYYY as the user types — iOS's native date input is too wide
+// for the form grid on narrow phones, and a controlled text input also
+// gives us the format validation the user asked for.
+function formatExpiryInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 6);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+function expiryToIso(s: string): string | undefined {
+  const m = s.match(/^(\d{2})\/(\d{4})$/);
+  if (!m) return undefined;
+  const mm = Number(m[1]);
+  const yyyy = Number(m[2]);
+  if (mm < 1 || mm > 12) return undefined;
+  // Settle on the last day of the month so an "Expires 05/2026" card is
+  // considered valid through May 31.
+  const lastDay = new Date(yyyy, mm, 0).getDate();
+  return new Date(yyyy, mm - 1, lastDay).toISOString();
+}
+
+function isoToExpiry(iso: string | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
