@@ -155,20 +155,18 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         }
       />
 
-      {(merchantHints?.pinRequired !== false || values.pin) && (
-        <Input
-          label={merchantHints?.pinRequired ? 'PIN' : 'PIN (optional)'}
-          value={values.pin}
-          onChange={(e) => update('pin', e.target.value)}
-          autoComplete="off"
-          spellCheck={false}
-          hint={
-            merchantHints?.pinLength?.length
-              ? `Typically ${merchantHints.pinLength.join(' / ')} digits`
-              : undefined
-          }
-        />
-      )}
+      <Input
+        label={merchantHints?.pinRequired ? 'PIN' : 'PIN (optional)'}
+        value={values.pin}
+        onChange={(e) => update('pin', e.target.value)}
+        autoComplete="off"
+        spellCheck={false}
+        hint={
+          merchantHints?.pinLength?.length
+            ? `Typically ${merchantHints.pinLength.join(' / ')} digits`
+            : undefined
+        }
+      />
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
         <h3 className="text-sm font-medium text-slate-200">Codes</h3>
@@ -200,7 +198,7 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Input
           label="Face value"
           inputMode="decimal"
@@ -217,7 +215,7 @@ export function CardForm({ initial, submitLabel, onSubmit, prefill }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Input
           label="Currency"
           value={values.currency}

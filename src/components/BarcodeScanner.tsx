@@ -20,6 +20,16 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
 
+  // Keep the latest onDetected reachable without putting it in the effect's
+  // dependency array. Parents typically pass an inline arrow function which
+  // changes identity on every render — if that re-runs this effect, the
+  // camera tears down and tries to restart on every parent re-render and
+  // never settles enough to actually scan anything.
+  const onDetectedRef = useRef(onDetected);
+  useEffect(() => {
+    onDetectedRef.current = onDetected;
+  }, [onDetected]);
+
   useEffect(() => {
     let controls: ZxingControls | null = null;
     let cancelled = false;
@@ -40,7 +50,7 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
             const kind: CodeKind = QR_FAMILY.has(result.getBarcodeFormat().toString())
               ? 'qrcode'
               : 'barcode';
-            onDetected(result.getText(), kind);
+            onDetectedRef.current(result.getText(), kind);
           },
         )) as ZxingControls;
         setStarting(false);
@@ -55,7 +65,7 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
       cancelled = true;
       controls?.stop();
     };
-  }, [onDetected]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] animate-[gicca-sheet-up_0.32s_cubic-bezier(0.2,0.85,0.3,1)_both]">
