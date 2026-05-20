@@ -80,8 +80,14 @@ export function Screen({ children, className = '' }: { children: ReactNode; clas
 }
 
 export function CenteredCard({ children }: { children: ReactNode }) {
+  // Use max() so the safe-area insets only *extend* the base 1.5rem
+  // padding — without it, the pl/pr from SAFE_AREA_PADDING wins the
+  // cascade against the shorthand p-6 and the horizontal padding
+  // collapses to 0 in portrait (where the inset is 0).
   return (
-    <div className={`min-h-dvh flex items-center justify-center p-6 bg-slate-950 text-slate-100 ${SAFE_AREA_PADDING}`}>
+    <div
+      className="min-h-dvh flex items-center justify-center bg-slate-950 text-slate-100 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))]"
+    >
       <div className="w-full max-w-md space-y-6">{children}</div>
     </div>
   );
